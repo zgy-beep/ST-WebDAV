@@ -1,11 +1,14 @@
 /* ST-WebDAV 业务样式：严格遵守 ui-kit Flat Glass 规范，只使用 var(--nvui-*) 令牌 */
 
 #st-webdav-layer {
-  z-index: 2147483647;
+  z-index: 2147483647 !important;
+  position: fixed !important;
+  inset: 0 !important;
+  margin: 0 !important;
 }
 
-#st-webdav-overlay .nvui-panel {
-  --nvui-panel-width: 900px;
+#st-webdav-overlay {
+  z-index: 2147483647 !important;
 }
 
 .st-webdav-container {

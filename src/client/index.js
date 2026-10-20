@@ -174,6 +174,11 @@
     return panel;
   }
 
+  // 辅助获取指定 tab 的内容 DOM 容器
+  function getTabPane(key) {
+    return panel.body.querySelector(`#${panel.id}-pane-${key}`) || panel.body;
+  }
+
   // 刷新当前活动标签页
   function refreshCurrentTab() {
     loadHistoryList();
@@ -183,7 +188,7 @@
 
   // —— 分区 1：备份操作 (Backup Tab) ——
   function buildBackupTab() {
-    const pane = panel.getTabPane('backup');
+    const pane = getTabPane('backup');
     pane.innerHTML = `
       <div class="st-webdav-container">
         <!-- WebDAV 状态条 -->
@@ -381,7 +386,7 @@
 
   // —— 分区 2：远端备份历史 (History Tab) ——
   function buildHistoryTab() {
-    const pane = panel.getTabPane('history');
+    const pane = getTabPane('history');
     pane.innerHTML = `
       <div class="st-webdav-container">
         <div class="st-webdav-bar" style="justify-content: space-between;">
@@ -531,7 +536,7 @@
 
   // —— 分区 3：服务设置 (Settings Tab) ——
   function buildSettingsTab() {
-    const pane = panel.getTabPane('settings');
+    const pane = getTabPane('settings');
     pane.innerHTML = `
       <div class="st-webdav-container">
         <!-- WebDAV 连接设置 -->
@@ -754,6 +759,8 @@
       try {
         const p = await initUI();
         p.open();
+        if (p.dialog) p.dialog.style.zIndex = '2147483647';
+        if (p.overlay) p.overlay.style.zIndex = '2147483647';
         checkWebDavHealth();
       } catch (err) {
         toast(`打开面板失败: ${err.message}`, 'danger');
