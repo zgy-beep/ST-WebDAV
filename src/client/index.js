@@ -80,30 +80,109 @@
     }
   }
 
-  // ---------- 2. 后端 API 通信 ----------
-  async function apiCall(endpoint, method = 'GET', body = null) {
-    const headers = { 'Content-Type': 'application/json' };
-    
-    // 如果酒馆有 CSRF token 保护
-    if (window.SillyTavern?.getContext) {
-      const ctx = window.SillyTavern.getContext();
-      if (ctx?.csrfToken) headers['X-CSRF-Token'] = ctx.csrfToken;
+  // ---------- 2. 后端 API 通信与 CSRF Token 获取 ----------
+  let cachedCsrfToken = '';
+
+  async function getCsrfToken(forceRefresh = false) {
+    if (cachedCsrfToken && !forceRefresh) return cachedCsrfToken;
+
+    // 1. 尝试从酒馆全局函数 getRequestHeaders 获取
+    if (typeof window.getRequestHeaders === 'function') {
+      try {
+        const h = window.getRequestHeaders();
+        const t = h?.['X-CSRF-Token'] || h?.['x-csrf-token'];
+        if (t) {
+          cachedCsrfToken = t;
+          return cachedCsrfToken;
+        }
+      } catch {}
     }
 
-    const options = { method, headers };
+    // 2. 尝试从 getContext().getRequestHeaders 获取
+    const ctx = window.SillyTavern?.getContext?.();
+    if (typeof ctx?.getRequestHeaders === 'function') {
+      try {
+        const h = ctx.getRequestHeaders();
+        const t = h?.['X-CSRF-Token'] || h?.['x-csrf-token'];
+        if (t) {
+          cachedCsrfToken = t;
+          return cachedCsrfToken;
+        }
+      } catch {}
+    }
+
+    // 3. 尝试从 DOM meta 标签获取
+    const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (metaToken) {
+      cachedCsrfToken = metaToken;
+      return cachedCsrfToken;
+    }
+
+    // 4. 尝试动态加载酒馆核心 /scripts/script.js 获取
+    try {
+      const coreScript = await import('/scripts/script.js').catch(() => null);
+      if (typeof coreScript?.getRequestHeaders === 'function') {
+        const h = coreScript.getRequestHeaders();
+        const t = h?.['X-CSRF-Token'] || h?.['x-csrf-token'];
+        if (t) {
+          cachedCsrfToken = t;
+          return cachedCsrfToken;
+        }
+      }
+    } catch {}
+
+    // 5. 兜底方案：直接向服务端 /csrf-token 发起 GET 请求获取
+    try {
+      const resp = await fetch('/csrf-token', { credentials: 'same-origin' });
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data?.token) {
+          cachedCsrfToken = data.token;
+          return cachedCsrfToken;
+        }
+      }
+    } catch {}
+
+    return '';
+  }
+
+  async function apiCall(endpoint, method = 'GET', body = null, isRetry = false) {
+    const headers = { 'Content-Type': 'application/json' };
+
+    // 非 GET 请求自动附带有效的 CSRF Token
+    if (method !== 'GET') {
+      const token = await getCsrfToken();
+      if (token) headers['X-CSRF-Token'] = token;
+    }
+
+    const options = {
+      method,
+      headers,
+      credentials: 'same-origin', // 必须携带 session cookie
+    };
     if (body && method !== 'GET') {
       options.body = JSON.stringify(body);
     }
 
     const resp = await fetch(`/api/plugins/st-webdav${endpoint}`, options);
-    
+
+    // 如果因 CSRF Token 失效导致 403，则自动刷新 Token 重试一次
+    if (resp.status === 403 && method !== 'GET' && !isRetry) {
+      console.warn('[ST-WebDAV] CSRF Token 可能已失效，正在刷新并重试...');
+      cachedCsrfToken = '';
+      const refreshedToken = await getCsrfToken(true);
+      if (refreshedToken) {
+        return apiCall(endpoint, method, body, true);
+      }
+    }
+
     if (resp.status === 404) {
       throw new Error('未检测到服务端插件：请在酒馆根目录 config.yaml 中将 enableServerPlugins 设置为 true 并重启酒馆。');
     }
 
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) {
-      throw new Error(data.error || `请求失败: HTTP ${resp.status}`);
+      throw new Error(data.error || data.message || `请求失败: HTTP ${resp.status}`);
     }
 
     return data;
