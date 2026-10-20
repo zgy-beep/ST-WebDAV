@@ -1,0 +1,23 @@
+{
+  "name": "st-webdav",
+  "version": "1.0.0",
+  "description": "SillyTavern WebDAV 全量备份与还原插件 (支持核心配置与全量数据流式同步、端到端加密、自动历史轮转)",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "sillytavern",
+    "sillytavern-plugin",
+    "webdav",
+    "backup",
+    "sync"
+  ],
+  "author": "zgy-beep",
+  "license": "MIT",
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "fflate": "^0.8.2"
+  }
+}

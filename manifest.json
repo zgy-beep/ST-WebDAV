@@ -1,0 +1,9 @@
+{
+  "display_name": "WebDAV 备份与恢复",
+  "loading_order": 25,
+  "requires": [],
+  "optional": [],
+  "js": "src/client/index.js",
+  "author": "zgy-beep",
+  "version": "1.0.0"
+}

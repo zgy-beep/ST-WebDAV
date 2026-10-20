@@ -1,0 +1,139 @@
+/* ST-WebDAV 业务样式：严格遵守 ui-kit Flat Glass 规范，只使用 var(--nvui-*) 令牌 */
+
+#st-webdav-layer {
+  z-index: 2147483647;
+}
+
+#st-webdav-overlay .nvui-panel {
+  --nvui-panel-width: 900px;
+}
+
+.st-webdav-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nvui-space-3);
+  padding: var(--nvui-space-3);
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.st-webdav-card {
+  background: var(--nvui-block-bg);
+  border: 1px solid var(--nvui-glass-line);
+  border-radius: var(--nvui-radius-lg);
+  padding: var(--nvui-space-3) var(--nvui-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nvui-space-25);
+  box-shadow: var(--nvui-shadow-sm);
+  transition: background var(--nvui-transition), border-color var(--nvui-transition);
+}
+
+.st-webdav-card:hover {
+  background: var(--nvui-block-bg-2);
+}
+
+.st-webdav-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nvui-space-2);
+}
+
+.st-webdav-card-title {
+  font-weight: var(--nvui-fw-semibold);
+  font-size: var(--nvui-fs-md);
+  color: var(--nvui-text);
+  display: flex;
+  align-items: center;
+  gap: var(--nvui-space-2);
+}
+
+.st-webdav-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--nvui-space-2);
+  font-size: var(--nvui-fs-xs);
+  color: var(--nvui-text-3);
+  flex-wrap: wrap;
+}
+
+.st-webdav-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--nvui-space-2);
+  flex-wrap: wrap;
+}
+
+.st-webdav-grid2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--nvui-space-2);
+}
+
+@media (max-width: 600px) {
+  .st-webdav-grid2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.st-webdav-radio-group {
+  display: flex;
+  gap: var(--nvui-space-2);
+  background: var(--nvui-input-bg);
+  padding: var(--nvui-space-1);
+  border-radius: var(--nvui-radius-md);
+  border: 1px solid var(--nvui-glass-line);
+}
+
+.st-webdav-radio-btn {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nvui-space-15);
+  padding: var(--nvui-space-2) var(--nvui-space-3);
+  border-radius: var(--nvui-radius-sm);
+  cursor: pointer;
+  font-size: var(--nvui-fs-sm);
+  color: var(--nvui-text-2);
+  transition: all var(--nvui-transition);
+  user-select: none;
+}
+
+.st-webdav-radio-btn.is-active {
+  background: var(--nvui-accent-bg);
+  color: var(--nvui-accent-2);
+  font-weight: var(--nvui-fw-medium);
+  box-shadow: var(--nvui-shadow-sm);
+}
+
+.st-webdav-status-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--nvui-space-2);
+  padding: var(--nvui-space-2) var(--nvui-space-3);
+  border-radius: var(--nvui-radius-md);
+  font-size: var(--nvui-fs-sm);
+  background: var(--nvui-block-bg);
+  border-left: 3px solid var(--nvui-text-3);
+}
+
+.st-webdav-status-banner.is-ok {
+  border-left-color: var(--nvui-ok);
+  background: var(--nvui-ok-bg);
+  color: var(--nvui-text);
+}
+
+.st-webdav-status-banner.is-warn {
+  border-left-color: var(--nvui-warn);
+  background: var(--nvui-warn-bg);
+  color: var(--nvui-text);
+}
+
+.st-webdav-status-banner.is-danger {
+  border-left-color: var(--nvui-danger);
+  background: var(--nvui-danger-bg);
+  color: var(--nvui-text);
+}

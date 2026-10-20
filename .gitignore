@@ -1,0 +1,5 @@
+node_modules/
+.DS_Store
+*.tmp*
+st_webdav_config.json
+backups/
