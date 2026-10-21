@@ -1,10 +1,18 @@
 /**
  * SillyTavern NVUI Kit · 可选运行时 API（零依赖）
  * ------------------------------------------------------------------
- * 版本：ui-kit v2.4.0（与 package.json / tokens.css / components.css 版本号保持一致）
+ * 版本：ui-kit v2.5.0（与 package.json / tokens.css / components.css 版本号保持一致）
  * 用途：给插件/其它软件一个「可调用的设计接口」——用函数创建符合本 Kit 规范的面板、
  *       标签页、折叠分组、开关行、输入行、进度条、吐司，自动带上布局标准、无障碍属性、
  *       动效降级与焦点管理，避免每个插件各写一套 DOM。
+ *
+ * v2.5.0 变更摘要：
+ *   1. 新增 `.nvui-hint.is-ok` / `.nvui-hint.is-danger` 语义色提示类（原仅支持 is-warn）；
+ *   2. 新增 `.nvui-btn.is-xs` 超小尺寸按钮变体（补齐尺寸阶梯 is-default → is-sm → is-xs）；
+ *   3. 新增 `.nvui-badge.is-subtle` 低强调徽标变体；
+ *   4. 新增 `.nvui-progress.is-primary` 主色进度条变体；
+ *   5. 面板 destroy() 强化：close 事件真正派发后再摘除 DOM 节点，
+ *      并保留 50ms 兜底定时器（NEW-16 补强）。
  *
  * 设计约束（本文件由 test/test-ui-kit.js 守护）：
  *   1. 零依赖、无网络请求、无 emoji；不 import 任何框架。
@@ -52,7 +60,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : this), function () {
     'use strict';
 
-    var VERSION = '2.4.0';
+    var VERSION = '2.5.0';
     var PANEL_CLASS = 'nvui-panel';
     var TOAST_LAYER_ID = 'nvui-api-toast-layer';
 
@@ -1262,14 +1270,49 @@
 
         function destroy() {
             unregisterEscapeHandler(closePanel);
-            /* 先关闭 dialog 再摘除节点（NEW-16）：
-               直接 removeChild 不会触发 dialog 的 close 事件，
-               宿主若依赖该事件做清理就会漏收。这里显式 close() 一次。 */
+            /* NEW-16：先 close() 再摘节点，让宿主能收到 dialog 的 close 事件。
+               直接 removeChild 不会触发 close 事件，宿主若依赖该事件做清理就会漏收。
+
+               但光 close() 还不够：dialog.close() 派发的 close 事件是**异步 task**
+               （实测同步调用后立刻读计数为 0，稍后才变 1）。若在 close() 之后
+               同步 removeChild，事件派发时节点已经脱离文档树，事件不会传播到
+               document —— 宿主最常见的姿势「document.addEventListener('close', …, true)」
+               仍然收不到，等于改了个寂寞。
+
+               故：把「摘除节点」推迟到 close 事件真正派发之后再做：
+                 1. 先挂一次性 close 监听（捕获阶段的委托监听此刻也能收到事件）；
+                 2. 调用 close()；
+                 3. 事件派发后（再让出一个 task，让冒泡阶段走完）摘除；
+                 4. 另留一个兜底定时器 —— 极端情况下 close 事件未派发时也要摘干净，
+                    绝不让节点泄漏在 DOM 里。
+               摘除动作本身是幂等的（removed 标志），重复触发无害。 */
+            var removed = false;
+            var onClose = function () {
+                try { dialog.removeEventListener('close', onClose); } catch (err) { /* 忽略 */ }
+                /* 事件已进入目标阶段，再让出一个 task，确保冒泡阶段也走完 */
+                setTimeout(removeNodes, 0);
+            };
             if (dialog && dialog.open) {
-                try { dialog.close(); } catch (err) { dialog.removeAttribute('open'); }
+                try {
+                    dialog.addEventListener('close', onClose);
+                    dialog.close();
+                } catch (err) {
+                    try { dialog.removeAttribute('open'); } catch (e) { /* 忽略 */ }
+                    removeNodes();
+                }
+                /* 兜底：close 事件未派发时也要摘干净 */
+                setTimeout(removeNodes, 50);
+            } else {
+                removeNodes();
             }
-            if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
-            if (dialog && dialog.parentNode) dialog.parentNode.removeChild(dialog);
+            /* 摘除动作定义在末尾（函数声明提升，调用点在其之前也没问题），
+               目的是让上面的「close() → 等待事件 → 摘除」顺序在源码上一目了然。 */
+            function removeNodes() {
+                if (removed) return;
+                removed = true;
+                if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                if (dialog && dialog.parentNode) dialog.parentNode.removeChild(dialog);
+            }
             opener = null;
             if (typeof opts.destroy === 'function') opts.destroy();
         }

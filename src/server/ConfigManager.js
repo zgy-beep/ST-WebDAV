@@ -1,8 +1,22 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { resolveUserDir } from './UserHelper.js';
+import { validateHttpUrl } from './UrlGuard.js';
 
 const MASKED = '********';
+
+/**
+ * 从全局模板继承到新用户配置时**必须剔除**的字段
+ * ------------------------------------------------------------------
+ * 这些字段要么是凭据（越权分发给其他账号），要么是运行时状态
+ * （沿用会导致新用户看到别人的备份时间与失败记录）。
+ */
+const TEMPLATE_EXCLUDED_KEYS = new Set([
+  'webdavPassword',
+  'encryptionPassword',
+  'lastBackupTime',
+  'lastBackupStatus',
+]);
 
 const DEFAULT_CONFIG = {
   webdavUrl: '',
@@ -44,7 +58,13 @@ export class ConfigManager {
         try {
           const globalRaw = fs.readFileSync(globalConfigPath, 'utf-8');
           const globalParsed = JSON.parse(globalRaw);
-          mgr.config = { ...DEFAULT_CONFIG, ...globalParsed };
+          // 只继承 URL / 目录 / 策略类字段，剔除凭据与运行时状态
+          const inherited = {};
+          for (const [key, value] of Object.entries(globalParsed)) {
+            if (TEMPLATE_EXCLUDED_KEYS.has(key)) continue;
+            inherited[key] = value;
+          }
+          mgr.config = { ...DEFAULT_CONFIG, ...inherited };
         } catch {}
       }
 
@@ -75,11 +95,38 @@ export class ConfigManager {
         const raw = fs.readFileSync(this.filePath, 'utf-8');
         const parsed = JSON.parse(raw);
         this.config = { ...DEFAULT_CONFIG, ...parsed };
+
+        // 对磁盘上的 URL 做一次安全校验：非法 URL 若被直接使用，
+        // 会在 updateConfig 时抛错并让该账号的任务锁泄漏
+        for (const key of ['webdavUrl', 'cdnBase']) {
+          const value = this.config[key];
+          if (!value) continue;
+          try {
+            this.config[key] = validateHttpUrl(String(value), { label: key === 'webdavUrl' ? 'WebDAV 地址' : 'CDN 地址' });
+          } catch (err) {
+            console.warn(`[ST-WebDAV] 配置文件中的 ${key} 无效，已忽略: ${err.message}`);
+            this.config[key] = '';
+          }
+        }
       }
     } catch (err) {
       console.warn('[ST-WebDAV] 读取配置文件失败，使用默认配置:', err.message);
       this.config = { ...DEFAULT_CONFIG };
     }
+  }
+
+  /**
+   * 从磁盘重新加载配置到内存缓存
+   * ------------------------------------------------------------------
+   * 还原流程会直接把磁盘上的配置文件覆盖写回，而 ConfigManager.instances
+   * 中缓存的仍是旧值 —— 不刷新会出现「还原了配置但下次 update 又写回旧值」
+   * 的不一致状态。
+   * @returns {boolean} 是否发生了实际刷新
+   */
+  refresh() {
+    const before = JSON.stringify(this.config);
+    this.load();
+    return JSON.stringify(this.config) !== before;
   }
 
   save() {
@@ -91,7 +138,8 @@ export class ConfigManager {
 
       const tempFile = `${this.filePath}.tmp.${Date.now()}_${Math.random().toString(36).slice(2)}`;
       try {
-        fs.writeFileSync(tempFile, JSON.stringify(this.config, null, 2), 'utf-8');
+        // 配置文件含明文凭据，限制为仅属主可读写（POSIX；Windows 下忽略）
+        fs.writeFileSync(tempFile, JSON.stringify(this.config, null, 2), { encoding: 'utf-8', mode: 0o600 });
         fs.renameSync(tempFile, this.filePath);
       } catch (writeErr) {
         try { if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile); } catch {}
@@ -163,31 +211,20 @@ export class ConfigManager {
           .replace(/\.\./g, '');
         this.config[key] = clean || 'SillyTavern_Backups';
       } else if (key === 'webdavUrl') {
+        // 保存时即做完整校验（含 SSRF 黑名单），避免内网地址先入库再被使用
         const trimmed = String(val || '').trim();
         if (trimmed) {
-          try {
-            const parsed = new URL(trimmed);
-            if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-              throw new Error('只允许 http:// 或 https:// 协议');
-            }
-          } catch (e) {
-            throw new Error(`无效的 WebDAV 地址: ${e.message}`);
-          }
+          this.config[key] = validateHttpUrl(trimmed, { label: 'WebDAV 地址' });
+        } else {
+          this.config[key] = '';
         }
-        this.config[key] = trimmed;
       } else if (key === 'cdnBase') {
         const trimmed = String(val || '').trim();
         if (trimmed) {
-          try {
-            const parsed = new URL(trimmed);
-            if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
-              throw new Error('CDN 协议必须为 http 或 https');
-            }
-          } catch (e) {
-            throw new Error(`无效的 CDN 地址: ${e.message}`);
-          }
+          this.config[key] = validateHttpUrl(trimmed, { label: 'CDN 地址' });
+        } else {
+          this.config[key] = '';
         }
-        this.config[key] = trimmed;
       } else {
         this.config[key] = val;
       }

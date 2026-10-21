@@ -1,7 +1,7 @@
 /**
  * SillyTavern 插件通用 UI Kit · 组件样式
  * ------------------------------------------------------------------
- * 版本：ui-kit v2.4.0；依赖：tokens.css（必须先引入或先拼进来）
+ * 版本：ui-kit v2.5.0；依赖：tokens.css（必须先引入或先拼进来）
  *
  * 本目录是独立项目（自带 package.json / LICENSE / CHANGELOG / test/），
  * 可整目录复制/移动到任意文件夹或仓库，不依赖任何外部文件。
@@ -2296,4 +2296,38 @@ dialog.nvui-tl > .nvui-toast-stack {
         backdrop-filter: none;
         box-shadow: none;
     }
+}
+
+/* ==========================================================================
+ * v2.5.0 规范新增
+ * --------------------------------------------------------------------------
+ * 补齐四个此前「客户端已使用但 CSS 缺失」的类名，使前端调用不再静默失效。
+ * 全部使用既有 --nvui-* 令牌推导，零硬编码颜色。
+ * ========================================================================== */
+
+/* 语义色提示：is-warn 的成功 / 危险兄弟类（原仅支持 is-warn） */
+.nvui-hint.is-ok {
+    color: var(--nvui-ok);
+}
+
+.nvui-hint.is-danger {
+    color: var(--nvui-danger);
+}
+
+/* 超小按钮：补齐尺寸阶梯 is-default → is-sm → is-xs */
+.nvui-btn.is-xs {
+    min-height: 22px;
+    padding: var(--nvui-space-05) var(--nvui-space-15);
+    font-size: var(--nvui-fs-2xs);
+}
+
+/* 低强调徽标：表面色底 + 弱文本色，不抢视觉焦点 */
+.nvui-badge.is-subtle {
+    background: var(--nvui-block-bg);
+    color: var(--nvui-text-3);
+}
+
+/* 主色进度条：与默认 .nvui-progress-bar 同色，使 is-primary 类名合法化 */
+.nvui-progress.is-primary .nvui-progress-bar {
+    background: var(--nvui-accent);
 }

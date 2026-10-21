@@ -1,10 +1,18 @@
 import { Readable } from 'node:stream';
+import { validateHttpUrl } from './UrlGuard.js';
 
 /**
  * 健壮的 WebDAV 客户端 (兼容 Nextcloud, Alist, 群晖 NAS, 坚果云, InfiniCLOUD)
  * 包含 SSRF 防御、流式传输、递归建目录与精准多态诊断
  */
 export class WebDavClient {
+  /**
+   * 允许跟随的最大 HTTP 重定向跳数
+   * Nextcloud / Alist 等服务端在某些部署下会正常 302，
+   * 因此不能一律拒绝重定向，但必须限制跳数并逐跳校验。
+   */
+  static MAX_REDIRECTS = 3;
+
   /**
    * @param {object} options
    * @param {string} options.url WebDAV 根 URL (如 https://dav.example.com/remote.php/webdav/)
@@ -34,44 +42,14 @@ export class WebDavClient {
 
   /**
    * 严格校验与归一化 WebDAV URL (SSRF 防御)
-   * @param {string} rawUrl 
+   * @param {string} rawUrl
    * @returns {string}
    */
   validateAndNormalizeUrl(rawUrl) {
-    const trimmed = String(rawUrl || '').trim();
-    if (!trimmed) return '';
-
-    let parsed;
-    try {
-      parsed = new URL(trimmed);
-    } catch {
-      throw new Error(`无效的 WebDAV 地址: "${trimmed}"，必须为有效的 URL`);
-    }
-
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      throw new Error(`不安全的 WebDAV 协议: "${parsed.protocol}"，只允许 http:// 或 https://`);
-    }
-
-    // SSRF 拦截：禁止云厂商元数据服务、链路本地地址与各种变种编码
-    const rawHost = parsed.hostname.toLowerCase();
-    const cleanHost = rawHost.replace(/^\[|\]$/g, '');
-
-    const isCloudMeta =
-      cleanHost === '169.254.169.254' ||
-      cleanHost.startsWith('169.254.') ||
-      cleanHost === '2852039166' || // 169.254.169.254 的十进制表示
-      cleanHost === '0xa9fea9fe' || // 169.254.169.254 的十六进制表示
-      cleanHost === '100.100.100.200' || // 阿里云元数据
-      cleanHost === 'metadata.google.internal' ||
-      cleanHost === 'instance-data' ||
-      cleanHost === 'fd00:ec2::254' || // AWS IPv6 IMDS
-      cleanHost.startsWith('fe80:'); // IPv6 link-local
-
-    if (isCloudMeta) {
-      throw new Error(`SSRF 安全拦截：禁止访问云厂商元数据服务 (${rawHost})`);
-    }
-
-    return trimmed.replace(/\/+$/, '');
+    return validateHttpUrl(rawUrl, {
+      label: 'WebDAV 地址',
+      stripTrailingSlash: true,
+    });
   }
 
   /**
@@ -103,8 +81,18 @@ export class WebDavClient {
 
   /**
    * 带超时控制与精准错误包装的 fetch
-   * @param {string} url 
-   * @param {RequestInit} options 
+   *
+   * 安全要点 1：使用 redirect:'manual' 手动处理 3xx 跳转，
+   * 每一跳的 Location 都会重新走 validateAndNormalizeUrl 做 SSRF 校验，
+   * 避免「初始 URL 合法 → 302 跳到内网元数据地址」这一经典绕过手法。
+   *
+   * 安全要点 2：跨源跳转时**剥离 Authorization 头**。
+   * 原生 fetch 自动跟随时 undici 会在跨源时剥离凭据；改为手动跟随后
+   * 这个保护会丢失，必须显式补上 —— 否则恶意 WebDAV 服务器只需返回
+   * 一个 302 就能把用户的 Basic 账号密码送到攻击者主机。
+   *
+   * @param {string} url
+   * @param {RequestInit} options
    * @param {number} [customTimeout]
    */
   async fetchWithTimeout(url, options = {}, customTimeout = null) {
@@ -112,35 +100,83 @@ export class WebDavClient {
       ? Number(customTimeout)
       : (Number(this.timeoutMs) || 15000);
     const timeout = Math.max(3000, rawTimeout);
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeout);
 
+    let currentUrl = url;
+    let redirects = 0;
+    // 基准同源：只有同源跳转才允许携带凭据
+    let baseOrigin = null;
     try {
-      const resp = await fetch(url, {
-        ...options,
-        headers: {
-          ...this.getAuthHeaders(),
-          ...options.headers,
-        },
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
+      baseOrigin = new URL(this.url || url).origin;
+    } catch {
+      baseOrigin = null;
+    }
+    let sendAuth = true;
+
+    while (true) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeout);
+
+      // 跨源跳转后不再附带认证头
+      const requestHeaders = { ...options.headers };
+      if (sendAuth) {
+        Object.assign(requestHeaders, this.getAuthHeaders());
+      }
+
+      let resp;
+      try {
+        resp = await fetch(currentUrl, {
+          ...options,
+          redirect: 'manual',
+          headers: requestHeaders,
+          signal: controller.signal,
+        });
+        clearTimeout(timer);
+      } catch (err) {
+        clearTimeout(timer);
+        if (err.name === 'AbortError' || err.message?.includes('aborted')) {
+          throw new Error(`WebDAV 请求超时 (超过 ${timeout}ms)，请检查网络状况或服务端防火墙`);
+        }
+        if (err.code === 'ECONNREFUSED') {
+          throw new Error('WebDAV 服务器拒绝连接 (ECONNREFUSED)，目标端口未开放或服务未运行');
+        }
+        if (err.code === 'ENOTFOUND') {
+          throw new Error(`域名无法解析 (ENOTFOUND)，请检查 WebDAV 地址是否正确`);
+        }
+        if (err.message?.includes('certificate') || err.message?.includes('self-signed')) {
+          throw new Error(`SSL/TLS 证书验证失败 (${err.message})`);
+        }
+        throw err;
+      }
+
+      // 手动处理重定向：仅在允许的次数内，且每一跳重新做 SSRF 校验
+      if (resp.status >= 300 && resp.status < 400 && resp.headers.get('location')) {
+        if (redirects >= WebDavClient.MAX_REDIRECTS) {
+          throw new Error(`WebDAV 重定向次数过多 (超过 ${WebDavClient.MAX_REDIRECTS} 次)，已中止请求`);
+        }
+        const location = resp.headers.get('location');
+        let nextUrl;
+        try {
+          nextUrl = new URL(location, currentUrl).toString();
+        } catch {
+          throw new Error(`WebDAV 返回了无效的重定向地址: ${location}`);
+        }
+        // 关键：跳转目标必须重新通过 SSRF 校验
+        this.validateAndNormalizeUrl(nextUrl);
+
+        // 跨源跳转 → 剥离凭据，防止 Basic 账号密码被送到第三方主机
+        try {
+          if (baseOrigin && new URL(nextUrl).origin !== baseOrigin) {
+            sendAuth = false;
+            console.warn('[ST-WebDAV] 检测到跨源重定向，已剥离认证凭据以防凭据泄漏');
+          }
+        } catch {}
+
+        redirects++;
+        currentUrl = nextUrl;
+        continue;
+      }
+
       return resp;
-    } catch (err) {
-      clearTimeout(timer);
-      if (err.name === 'AbortError' || err.message?.includes('aborted')) {
-        throw new Error(`WebDAV 请求超时 (超过 ${timeout}ms)，请检查网络状况或服务端防火墙`);
-      }
-      if (err.code === 'ECONNREFUSED') {
-        throw new Error('WebDAV 服务器拒绝连接 (ECONNREFUSED)，目标端口未开放或服务未运行');
-      }
-      if (err.code === 'ENOTFOUND') {
-        throw new Error(`域名无法解析 (ENOTFOUND)，请检查 WebDAV 地址是否正确`);
-      }
-      if (err.message?.includes('certificate') || err.message?.includes('self-signed')) {
-        throw new Error(`SSL/TLS 证书验证失败 (${err.message})`);
-      }
-      throw err;
     }
   }
 
@@ -359,8 +395,65 @@ export class WebDavClient {
   }
 
   /**
+   * 复制远端文件 (WebDAV COPY)
+   * ------------------------------------------------------------------
+   * 用于「分享到跨账号共享区」：服务端直接复制，避免把大文件下载到
+   * 本地再上传，节省带宽与时间。
+   * 某些 WebDAV 实现不支持 COPY（返回 405/501/403），此时降级为
+   * 「下载 + 上传」回退方案。
+   *
+   * @param {string} srcRemotePath 源文件相对路径
+   * @param {string} destRemotePath 目标文件相对路径
+   * @returns {Promise<{ success: boolean, via: 'copy' | 'fallback', status?: number }>}
+   */
+  async copy(srcRemotePath, destRemotePath) {
+    const srcUrl = this.buildUrl(srcRemotePath);
+    const destUrl = this.buildUrl(destRemotePath);
+
+    try {
+      const resp = await this.fetchWithTimeout(srcUrl, {
+        method: 'COPY',
+        headers: {
+          Destination: destUrl,
+          Overwrite: 'T',
+        },
+      }, Math.max(this.timeoutMs * 4, 60000));
+
+      if (resp.status === 201 || resp.status === 204 || resp.ok) {
+        return { success: true, via: 'copy', status: resp.status };
+      }
+
+      // 405 Method Not Allowed / 501 Not Implemented / 403 Forbidden：
+      // 服务端不支持 COPY，回退为下载 + 上传
+      if (resp.status === 405 || resp.status === 501 || resp.status === 403) {
+        console.info(`[ST-WebDAV] WebDAV COPY 不受支持 (HTTP ${resp.status})，降级为下载上传模式`);
+        return await this.copyViaDownloadUpload(srcRemotePath, destRemotePath);
+      }
+
+      throw new Error(`WebDAV COPY 失败: HTTP ${resp.status} ${resp.statusText}`);
+    } catch (err) {
+      // COPY 本身抛错（如服务端未实现该方法导致连接中断）时同样降级
+      if (err.message?.includes('COPY 失败')) throw err;
+      console.info(`[ST-WebDAV] WebDAV COPY 异常，降级为下载上传模式: ${err.message}`);
+      return await this.copyViaDownloadUpload(srcRemotePath, destRemotePath);
+    }
+  }
+
+  /**
+   * COPY 的降级实现：下载源文件后重新上传到目标路径
+   * @param {string} srcRemotePath
+   * @param {string} destRemotePath
+   * @returns {Promise<{ success: boolean, via: 'fallback' }>}
+   */
+  async copyViaDownloadUpload(srcRemotePath, destRemotePath) {
+    const buffer = await this.getBuffer(srcRemotePath);
+    await this.put(destRemotePath, buffer, buffer.length);
+    return { success: true, via: 'fallback' };
+  }
+
+  /**
    * 列出远端目录下的文件列表 (PROPFIND Depth: 1)
-   * @param {string} remoteDir 
+   * @param {string} remoteDir
    * @returns {Promise<Array<{ name: string, path: string, isDirectory: boolean, size: number, lastModified: string }>>}
    */
   async listFiles(remoteDir = '') {

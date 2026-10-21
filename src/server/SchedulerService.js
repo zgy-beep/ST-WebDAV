@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ConfigManager } from './ConfigManager.js';
+import { WebDavClient } from './WebDavClient.js';
 
 export class SchedulerService {
   /**
@@ -99,11 +100,21 @@ export class SchedulerService {
         }
       }
 
+      // 为每个用户构造独立的 WebDavClient
+      // 避免使用全局单例（原地 updateConfig 会导致多租户凭据串扰）
+      const userClient = new WebDavClient({
+        url: userConfig.get('webdavUrl'),
+        username: userConfig.get('webdavUsername'),
+        password: userConfig.get('webdavPassword'),
+        timeoutMs: userConfig.get('timeoutMs') || 15000,
+      });
+
       console.log(`[ST-WebDAV] 触发用户 [${targetUser.handle}] 的自动化定时备份任务...`);
       await this.backupService.runBackup({
         note: '自动化定时备份',
         requestUser: targetUser,
         configManager: userConfig,
+        webDavClient: userClient,
       });
     } catch (err) {
       console.warn(`[ST-WebDAV] 用户 [${targetUser.handle}] 定时备份异常:`, err.message);

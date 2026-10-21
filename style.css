@@ -1,14 +1,13 @@
 /**
- * ST-WebDAV 业务样式 · 严格遵守 SillyTavern NVUI Kit v2.4.0 规范
+ * ST-WebDAV 业务样式 · 严格遵守 SillyTavern NVUI Kit v2.5.0 规范
  * ------------------------------------------------------------------
- * 1. 顶部导入 Kit 令牌与组件契约；
+ * 1. Kit 令牌与组件契约由运行时统一供给：ensureNVUI() 以 <link> 注入
+ *    src/client/vendor/ui-kit/ 下的 tokens.css 与 components.css，
+ *    本文件不再从相对路径引入任何外部样式表（避免根目录 ui-kit/ 移除后 404）；
  * 2. 全文件零颜色字面量，100% 取值走 var(--nvui-*) 令牌；
  * 3. 绝无裸元素选择器，不污染宿主；无 !important；
  * 4. 浮层与层级由 Kit 内置载体 (--nvui-z-layer) 全权管理。
  */
-
-@import url('./ui-kit/tokens.css');
-@import url('./ui-kit/components.css');
 
 /* ==========================================================================
  * 1. 面板内部容器与通用排版
@@ -19,6 +18,10 @@
   flex-direction: column;
   gap: var(--nvui-space-3);
   box-sizing: border-box;
+  /* Kit 未提供 --nvui-shadow-sm / --nvui-radius-md 令牌，
+     此处用既有令牌派生等效值，避免 var() 落空导致声明被静默丢弃。 */
+  --st-webdav-radius-md: var(--nvui-radius);
+  --st-webdav-shadow-sm: 0 1px 2px var(--nvui-block-bg);
 }
 
 .st-webdav-bar {
@@ -77,7 +80,12 @@
   background: var(--nvui-accent-bg);
   color: var(--nvui-accent-2);
   font-weight: var(--nvui-fw-medium);
-  box-shadow: var(--nvui-shadow-sm);
+  box-shadow: var(--st-webdav-shadow-sm);
+}
+
+.st-webdav-radio-btn:focus-visible {
+  outline: var(--nvui-focus-ring-w) solid var(--nvui-focus-ring-color);
+  outline-offset: var(--nvui-focus-ring-offset);
 }
 
 /* ==========================================================================
@@ -92,7 +100,7 @@
   padding: var(--nvui-space-3);
   background: var(--nvui-block-bg);
   border: 1px dashed var(--nvui-glass-line);
-  border-radius: var(--nvui-radius-md);
+  border-radius: var(--st-webdav-radius-md);
 }
 
 .st-webdav-custom-toolbar {
@@ -116,7 +124,7 @@
   padding: var(--nvui-space-2) var(--nvui-space-25);
   background: var(--nvui-block-bg-2);
   border: 1px solid var(--nvui-glass-line);
-  border-radius: var(--nvui-radius-md);
+  border-radius: var(--st-webdav-radius-md);
   cursor: pointer;
   transition: all var(--nvui-transition);
   user-select: none;
@@ -127,7 +135,7 @@
 }
 
 .st-webdav-cat-item input[type="checkbox"] {
-  margin-top: 3px;
+  margin-top: var(--nvui-space-05);
   accent-color: var(--nvui-accent);
   cursor: pointer;
 }
@@ -135,7 +143,7 @@
 .st-webdav-cat-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--nvui-space-05);
 }
 
 .st-webdav-cat-title {
@@ -162,7 +170,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--nvui-space-25);
-  box-shadow: var(--nvui-shadow-sm);
+  box-shadow: var(--st-webdav-shadow-sm);
   transition: background-color var(--nvui-transition), border-color var(--nvui-transition);
 }
 
@@ -213,6 +221,64 @@
 
 .st-webdav-card-note i {
   color: var(--nvui-accent);
-  margin-top: 2px;
+  margin-top: var(--nvui-space-05);
   flex-shrink: 0;
+}
+
+/* 共享区卡片：左侧信息色竖条，与「我的备份」做出视觉区分 */
+.st-webdav-card-shared {
+  border-left: 2px solid var(--nvui-info-line);
+}
+
+/* ==========================================================================
+ * 5. 「我的备份 / 共享备份」切换按钮组
+ * ========================================================================== */
+
+.st-webdav-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nvui-space-1);
+  flex-wrap: wrap;
+}
+
+/* ==========================================================================
+ * 6. 面板内联确认区 (替代原生 confirm / prompt)
+ * ========================================================================== */
+
+.st-webdav-confirm {
+  /* 沿用 Kit .nvui-alert 的横向排布：左侧语义图标，右侧内容列 */
+  align-items: flex-start;
+  gap: var(--nvui-space-2);
+  margin-top: var(--nvui-space-1);
+}
+
+.st-webdav-confirm-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--nvui-space-2);
+  min-width: 0;
+}
+
+.st-webdav-confirm-title {
+  display: flex;
+  align-items: center;
+  gap: var(--nvui-space-15);
+  font-weight: var(--nvui-fw-semibold);
+  font-size: var(--nvui-fs-md);
+  color: var(--nvui-text);
+}
+
+.st-webdav-confirm-title i {
+  flex-shrink: 0;
+  color: var(--nvui-text-2);
+}
+
+.st-webdav-confirm .nvui-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.st-webdav-confirm .st-webdav-bar {
+  justify-content: flex-end;
 }
