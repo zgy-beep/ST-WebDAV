@@ -1,0 +1,88 @@
+/**
+ * SillyTavern 数据分类项定义
+ * 支持核心配置、角色、聊天记录、世界书、提示词、主题、用户资产、扩展等精细化组合备份
+ */
+export const BACKUP_CATEGORIES = [
+  {
+    id: 'settings',
+    name: '核心设置与密钥',
+    desc: 'settings.json, secrets.json, stats.json 等酒馆全局基础配置',
+    files: ['settings.json', 'secrets.json', 'stats.json', 'image-metadata.json'],
+    dirs: [],
+    defaultSelected: true,
+  },
+  {
+    id: 'characters',
+    name: '角色卡片 (Characters)',
+    desc: '全部角色卡 PNG / JSON 及其头像与配置 (characters/)',
+    files: [],
+    dirs: ['characters'],
+    defaultSelected: true,
+  },
+  {
+    id: 'chats',
+    name: '聊天记录与群组 (Chats)',
+    desc: '单聊历史、群组会话、群聊定义 (chats/, group chats/, groups/)',
+    files: [],
+    dirs: ['chats', 'group chats', 'groups'],
+    defaultSelected: true,
+  },
+  {
+    id: 'worlds',
+    name: '世界书 (Lorebooks)',
+    desc: '世界设定、关联词条库与知识条目 (worlds/)',
+    files: [],
+    dirs: ['worlds'],
+    defaultSelected: true,
+  },
+  {
+    id: 'prompts',
+    name: '提示词与预设模板',
+    desc: 'context, instruct, sysprompt, reasoning, 快捷回复与模型设置',
+    files: [],
+    dirs: [
+      'context',
+      'instruct',
+      'sysprompt',
+      'reasoning',
+      'QuickReplies',
+      'OpenAI Settings',
+      'KoboldAI Settings',
+      'NovelAI Settings',
+      'TextGen Settings',
+    ],
+    defaultSelected: true,
+  },
+  {
+    id: 'themes',
+    name: '主题与移动界面外观',
+    desc: 'themes/ 自定义主题样式与 movingUI 移动式界面布局',
+    files: [],
+    dirs: ['themes', 'movingUI'],
+    defaultSelected: false,
+  },
+  {
+    id: 'userAvatars',
+    name: '用户形象与背景壁纸',
+    desc: 'User Avatars, user 资料, backgrounds 背景壁纸与 assets',
+    files: [],
+    dirs: ['User Avatars', 'user', 'backgrounds', 'assets'],
+    defaultSelected: false,
+  },
+  {
+    id: 'extensions',
+    name: '扩展插件配置',
+    desc: 'extensions/ 扩展持久化配置与自定义插件数据',
+    files: [],
+    dirs: ['extensions'],
+    defaultSelected: false,
+  },
+  {
+    id: 'vectors',
+    name: '向量记忆库 (Vectors)',
+    desc: 'vectors/ 向量嵌入数据库与相关索引文件',
+    files: [],
+    dirs: ['vectors'],
+    defaultSelected: false,
+  },
+];

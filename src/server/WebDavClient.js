@@ -13,16 +13,23 @@ export class WebDavClient {
    * @param {number} [options.timeoutMs=15000] 超时时间毫秒
    */
   constructor(options = {}) {
+    this.url = '';
+    this.username = '';
+    this.password = '';
+    this.timeoutMs = 15000;
     this.updateConfig(options);
   }
 
-  updateConfig({ url, username, password, timeoutMs }) {
+  updateConfig({ url, username, password, timeoutMs } = {}) {
     if (url !== undefined) {
       this.url = this.validateAndNormalizeUrl(url);
     }
     if (username !== undefined) this.username = String(username || '').trim();
     if (password !== undefined) this.password = String(password || '').trim();
-    if (timeoutMs !== undefined) this.timeoutMs = Math.max(3000, Number(timeoutMs) || 15000);
+    if (timeoutMs !== undefined) {
+      const parsedTimeout = Number(timeoutMs);
+      this.timeoutMs = (!isNaN(parsedTimeout) && parsedTimeout > 0) ? Math.max(3000, parsedTimeout) : 15000;
+    }
   }
 
   /**
@@ -45,10 +52,23 @@ export class WebDavClient {
       throw new Error(`不安全的 WebDAV 协议: "${parsed.protocol}"，只允许 http:// 或 https://`);
     }
 
-    // SSRF 拦截：禁止云厂商元数据地址与特殊私有广播
-    const hostname = parsed.hostname.toLowerCase();
-    if (hostname === '169.254.169.254' || hostname === 'metadata.google.internal' || hostname === 'instance-data') {
-      throw new Error(`SSRF 安全拦截：禁止访问云厂商元数据服务 (${hostname})`);
+    // SSRF 拦截：禁止云厂商元数据服务、链路本地地址与各种变种编码
+    const rawHost = parsed.hostname.toLowerCase();
+    const cleanHost = rawHost.replace(/^\[|\]$/g, '');
+
+    const isCloudMeta =
+      cleanHost === '169.254.169.254' ||
+      cleanHost.startsWith('169.254.') ||
+      cleanHost === '2852039166' || // 169.254.169.254 的十进制表示
+      cleanHost === '0xa9fea9fe' || // 169.254.169.254 的十六进制表示
+      cleanHost === '100.100.100.200' || // 阿里云元数据
+      cleanHost === 'metadata.google.internal' ||
+      cleanHost === 'instance-data' ||
+      cleanHost === 'fd00:ec2::254' || // AWS IPv6 IMDS
+      cleanHost.startsWith('fe80:'); // IPv6 link-local
+
+    if (isCloudMeta) {
+      throw new Error(`SSRF 安全拦截：禁止访问云厂商元数据服务 (${rawHost})`);
     }
 
     return trimmed.replace(/\/+$/, '');
@@ -70,7 +90,9 @@ export class WebDavClient {
    * @returns {string}
    */
   buildUrl(relPath = '') {
-    if (!this.url) throw new Error('WebDAV URL 尚未配置');
+    if (!this.url) {
+      throw new Error('WebDAV 服务端 URL 尚未配置，请先在「服务设置」中填写并保存配置');
+    }
     const cleanRel = String(relPath).replace(/\\/g, '/').replace(/^\/+/, '');
     if (!cleanRel) return this.url;
 
@@ -86,7 +108,10 @@ export class WebDavClient {
    * @param {number} [customTimeout]
    */
   async fetchWithTimeout(url, options = {}, customTimeout = null) {
-    const timeout = customTimeout || this.timeoutMs;
+    const rawTimeout = (customTimeout != null && !isNaN(Number(customTimeout)) && Number(customTimeout) > 0)
+      ? Number(customTimeout)
+      : (Number(this.timeoutMs) || 15000);
+    const timeout = Math.max(3000, rawTimeout);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
 
@@ -198,6 +223,9 @@ export class WebDavClient {
    * @param {string} remoteDir 
    */
   async ensureDirectory(remoteDir) {
+    if (!this.url) {
+      throw new Error('WebDAV 服务端 URL 尚未配置，请先在「服务设置」中填写并保存配置');
+    }
     const cleanDir = String(remoteDir || '').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
     if (!cleanDir) return;
 
@@ -220,6 +248,10 @@ export class WebDavClient {
           continue;
         }
 
+        if (checkResp.status === 401 || checkResp.status === 403) {
+          throw new Error(`WebDAV 认证失败 (HTTP ${checkResp.status})，请检查账号密码及写入权限`);
+        }
+
         // 不存在，发起 MKCOL 创建
         if (checkResp.status === 404 || checkResp.status === 405) {
           const mkResp = await this.fetchWithTimeout(targetUrl, {
@@ -230,14 +262,15 @@ export class WebDavClient {
           }
         }
       } catch (err) {
+        if (err.message?.includes('认证失败')) throw err;
         console.warn(`[ST-WebDAV] ensureDirectory ${currentPath} error:`, err.message);
       }
     }
   }
 
   /**
-   * 流式上传文件至 WebDAV (PUT)
-   * 零落盘临时文件、零 Node 堆内存积压
+   * 流式或整块上传文件至 WebDAV (PUT)
+   * 支持 Buffer 与 Stream，自动设定 Content-Length 防止部分 WebDAV 拒绝 chunked
    * @param {string} relPath 相对路径
    * @param {ReadableStream|Readable|Buffer} body 流或 Buffer
    * @param {number} [contentLength] 内容长度字节（如果已知）
@@ -250,6 +283,8 @@ export class WebDavClient {
     };
     if (contentLength != null && contentLength > 0) {
       headers['Content-Length'] = String(contentLength);
+    } else if (Buffer.isBuffer(body)) {
+      headers['Content-Length'] = String(body.length);
     }
 
     // Node 18+ 原生 fetch 对 stream 请求需 duplex: 'half'
@@ -260,15 +295,21 @@ export class WebDavClient {
       duplex: 'half',
     };
 
-    const resp = await this.fetchWithTimeout(targetUrl, fetchOptions, this.timeoutMs * 4); // 大文件适当增加超时
+    const baseTimeout = Number(this.timeoutMs) || 15000;
+    const uploadTimeout = Math.max(baseTimeout * 4, 60000);
+
+    const resp = await this.fetchWithTimeout(targetUrl, fetchOptions, uploadTimeout);
 
     if (resp.ok || resp.status === 201 || resp.status === 204) {
       return { success: true, url: targetUrl, status: resp.status };
     }
 
     let detail = '';
-    try { detail = await resp.text(); } catch {}
-    throw new Error(`WebDAV PUT 上传失败 (HTTP ${resp.status}): ${detail.slice(0, 100) || resp.statusText}`);
+    try {
+      const text = await resp.text();
+      detail = text.slice(0, 100).replace(/[\r\n\t]+/g, ' ');
+    } catch {}
+    throw new Error(`WebDAV PUT 上传失败 (HTTP ${resp.status}): ${detail || resp.statusText}`);
   }
 
   /**
@@ -280,7 +321,7 @@ export class WebDavClient {
     const targetUrl = this.buildUrl(relPath);
     const resp = await this.fetchWithTimeout(targetUrl, {
       method: 'GET',
-    }, this.timeoutMs * 4);
+    }, Math.max(this.timeoutMs * 4, 60000));
 
     if (!resp.ok) {
       throw new Error(`WebDAV 下载失败: HTTP ${resp.status} ${resp.statusText}`);
@@ -385,9 +426,15 @@ export class WebDavClient {
       const sizeMatch = block.match(/<(?:\w+:)?getcontentlength[^>]*>(\d+)<\/(?:\w+:)?getcontentlength>/i);
       const size = sizeMatch ? parseInt(sizeMatch[1], 10) : 0;
 
-      // 修改时间
+      // 修改时间 (安全解析防 RangeError: Invalid time value)
       const modMatch = block.match(/<(?:\w+:)?getlastmodified[^>]*>([^<]+)<\/(?:\w+:)?getlastmodified>/i);
-      const lastModified = modMatch ? new Date(modMatch[1].trim()).toISOString() : new Date().toISOString();
+      let lastModified = new Date().toISOString();
+      if (modMatch && modMatch[1]) {
+        const d = new Date(modMatch[1].trim());
+        if (!isNaN(d.getTime())) {
+          lastModified = d.toISOString();
+        }
+      }
 
       // 文件名
       const segments = decodedHref.replace(/\/+$/, '').split('/');

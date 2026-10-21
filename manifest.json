@@ -4,6 +4,7 @@
   "requires": [],
   "optional": [],
   "js": "src/client/index.js",
+  "css": "style.css",
   "author": "zgy-beep",
   "version": "1.0.0"
 }

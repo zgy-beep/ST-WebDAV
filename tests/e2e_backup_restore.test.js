@@ -27,13 +27,18 @@ test('E2E 集成测试：核心配置打包加密上传至 WebDAV，再完整解
   // 2. 模拟远端 WebDAV 存储池
   const remoteStorage = new Map();
   const mockWebDavClient = {
+    updateConfig: () => {},
     ensureDirectory: async () => {},
-    put: async (remotePath, stream) => {
-      const chunks = [];
-      for await (const chunk of stream) {
-        chunks.push(chunk);
+    put: async (remotePath, body) => {
+      if (Buffer.isBuffer(body)) {
+        remoteStorage.set(remotePath, body);
+      } else {
+        const chunks = [];
+        for await (const chunk of body) {
+          chunks.push(chunk);
+        }
+        remoteStorage.set(remotePath, Buffer.concat(chunks));
       }
-      remoteStorage.set(remotePath, Buffer.concat(chunks));
       return { success: true, status: 201 };
     },
     getBuffer: async (remotePath) => {
@@ -64,6 +69,7 @@ test('E2E 集成测试：核心配置打包加密上传至 WebDAV，再完整解
   const tmpCfgPath = path.join(os.tmpdir(), `test_cfg_${Date.now()}.json`);
   const configManager = new ConfigManager(tmpCfgPath);
   configManager.update({
+    webdavUrl: 'https://dav.example.com/remote.php/webdav',
     remoteDirectory: 'Test_Backups',
     backupScope: 'core',
     retentionCount: 5,

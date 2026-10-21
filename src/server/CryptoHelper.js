@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { Transform } from 'node:stream';
+import { promisify } from 'node:util';
 
 const MAGIC_HEADER = Buffer.from('STWBDV01'); // 8 bytes magic marker
 const SALT_LEN = 16;
@@ -8,18 +9,30 @@ const TAG_LEN = 16;
 const PBKDF2_ITERATIONS = 100000;
 const KEY_LEN = 32;
 
+const pbkdf2Async = promisify(crypto.pbkdf2);
+
 /**
  * 端到端备份加密助手 (AES-256-GCM + PBKDF2-HMAC-SHA256)
  */
 export class CryptoHelper {
   /**
-   * 基于密码和盐派生 256 位密钥
+   * 基于密码和盐派生 256 位密钥 (同步版本，兼顾单元测试与向后兼容)
    * @param {string} password 
    * @param {Buffer} salt 
    * @returns {Buffer}
    */
   static deriveKey(password, salt) {
-    return crypto.pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, KEY_LEN, 'sha256');
+    return crypto.pbkdf2Sync(String(password || ''), salt, PBKDF2_ITERATIONS, KEY_LEN, 'sha256');
+  }
+
+  /**
+   * 基于密码和盐异步派生密钥 (避免阻塞主事件循环)
+   * @param {string} password 
+   * @param {Buffer} salt 
+   * @returns {Promise<Buffer>}
+   */
+  static async deriveKeyAsync(password, salt) {
+    return pbkdf2Async(String(password || ''), salt, PBKDF2_ITERATIONS, KEY_LEN, 'sha256');
   }
 
   /**
@@ -29,6 +42,10 @@ export class CryptoHelper {
    * @returns {Transform}
    */
   static createEncryptStream(password) {
+    if (!password) {
+      throw new Error('创建加密流失败：必须提供非空加密口令');
+    }
+
     const salt = crypto.randomBytes(SALT_LEN);
     const iv = crypto.randomBytes(IV_LEN);
     const key = CryptoHelper.deriveKey(password, salt);
@@ -70,6 +87,10 @@ export class CryptoHelper {
    * @returns {Transform}
    */
   static createDecryptStream(password) {
+    if (!password) {
+      throw new Error('创建解密流失败：必须提供非空解密口令');
+    }
+
     let headerBuffer = Buffer.alloc(0);
     const headerSize = MAGIC_HEADER.length + SALT_LEN + IV_LEN;
     let decipher = null;
@@ -105,7 +126,8 @@ export class CryptoHelper {
           trailingBuffer = Buffer.concat([trailingBuffer, data]);
           if (trailingBuffer.length > TAG_LEN) {
             const decryptableChunk = trailingBuffer.subarray(0, trailingBuffer.length - TAG_LEN);
-            trailingBuffer = trailingBuffer.subarray(trailingBuffer.length - TAG_LEN);
+            // 复制保留后 16 字节，防止大切片内存泄漏
+            trailingBuffer = Buffer.from(trailingBuffer.subarray(trailingBuffer.length - TAG_LEN));
             const decrypted = decipher.update(decryptableChunk);
             if (decrypted.length) {
               this.push(decrypted);

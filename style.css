@@ -1,65 +1,24 @@
-/* ST-WebDAV 业务样式：严格遵守 ui-kit Flat Glass 规范，只使用 var(--nvui-*) 令牌 */
+/**
+ * ST-WebDAV 业务样式 · 严格遵守 SillyTavern NVUI Kit v2.4.0 规范
+ * ------------------------------------------------------------------
+ * 1. 顶部导入 Kit 令牌与组件契约；
+ * 2. 全文件零颜色字面量，100% 取值走 var(--nvui-*) 令牌；
+ * 3. 绝无裸元素选择器，不污染宿主；无 !important；
+ * 4. 浮层与层级由 Kit 内置载体 (--nvui-z-layer) 全权管理。
+ */
 
-#st-webdav-layer {
-  z-index: 2147483647 !important;
-  position: fixed !important;
-  inset: 0 !important;
-  margin: 0 !important;
-}
+@import url('./ui-kit/tokens.css');
+@import url('./ui-kit/components.css');
 
-#st-webdav-overlay {
-  z-index: 2147483647 !important;
-}
+/* ==========================================================================
+ * 1. 面板内部容器与通用排版
+ * ========================================================================== */
 
 .st-webdav-container {
   display: flex;
   flex-direction: column;
   gap: var(--nvui-space-3);
-  padding: var(--nvui-space-3);
-  height: 100%;
-  overflow-y: auto;
   box-sizing: border-box;
-}
-
-.st-webdav-card {
-  background: var(--nvui-block-bg);
-  border: 1px solid var(--nvui-glass-line);
-  border-radius: var(--nvui-radius-lg);
-  padding: var(--nvui-space-3) var(--nvui-space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--nvui-space-25);
-  box-shadow: var(--nvui-shadow-sm);
-  transition: background var(--nvui-transition), border-color var(--nvui-transition);
-}
-
-.st-webdav-card:hover {
-  background: var(--nvui-block-bg-2);
-}
-
-.st-webdav-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--nvui-space-2);
-}
-
-.st-webdav-card-title {
-  font-weight: var(--nvui-fw-semibold);
-  font-size: var(--nvui-fs-md);
-  color: var(--nvui-text);
-  display: flex;
-  align-items: center;
-  gap: var(--nvui-space-2);
-}
-
-.st-webdav-card-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--nvui-space-2);
-  font-size: var(--nvui-fs-xs);
-  color: var(--nvui-text-3);
-  flex-wrap: wrap;
 }
 
 .st-webdav-bar {
@@ -81,12 +40,16 @@
   }
 }
 
+/* ==========================================================================
+ * 2. 备份范围分段控制器 (Segmented Radio)
+ * ========================================================================== */
+
 .st-webdav-radio-group {
   display: flex;
-  gap: var(--nvui-space-2);
-  background: var(--nvui-input-bg);
+  gap: var(--nvui-space-1);
+  background: var(--nvui-block-bg);
   padding: var(--nvui-space-1);
-  border-radius: var(--nvui-radius-md);
+  border-radius: var(--nvui-radius);
   border: 1px solid var(--nvui-glass-line);
 }
 
@@ -105,6 +68,11 @@
   user-select: none;
 }
 
+.st-webdav-radio-btn:hover {
+  color: var(--nvui-text);
+  background: var(--nvui-block-bg-2);
+}
+
 .st-webdav-radio-btn.is-active {
   background: var(--nvui-accent-bg);
   color: var(--nvui-accent-2);
@@ -112,31 +80,139 @@
   box-shadow: var(--nvui-shadow-sm);
 }
 
-.st-webdav-status-banner {
+/* ==========================================================================
+ * 3. 自定义备份数据分类挑选面板
+ * ========================================================================== */
+
+.st-webdav-custom-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nvui-space-2);
+  margin-top: var(--nvui-space-2);
+  padding: var(--nvui-space-3);
+  background: var(--nvui-block-bg);
+  border: 1px dashed var(--nvui-glass-line);
+  border-radius: var(--nvui-radius-md);
+}
+
+.st-webdav-custom-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--nvui-space-2);
+}
+
+.st-webdav-category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: var(--nvui-space-2);
+}
+
+.st-webdav-cat-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nvui-space-2);
+  padding: var(--nvui-space-2) var(--nvui-space-25);
+  background: var(--nvui-block-bg-2);
+  border: 1px solid var(--nvui-glass-line);
+  border-radius: var(--nvui-radius-md);
+  cursor: pointer;
+  transition: all var(--nvui-transition);
+  user-select: none;
+}
+
+.st-webdav-cat-item:hover {
+  border-color: var(--nvui-accent);
+}
+
+.st-webdav-cat-item input[type="checkbox"] {
+  margin-top: 3px;
+  accent-color: var(--nvui-accent);
+  cursor: pointer;
+}
+
+.st-webdav-cat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.st-webdav-cat-title {
+  font-size: var(--nvui-fs-sm);
+  font-weight: var(--nvui-fw-medium);
+  color: var(--nvui-text);
+}
+
+.st-webdav-cat-desc {
+  font-size: var(--nvui-fs-xs);
+  color: var(--nvui-text-3);
+  line-height: var(--nvui-lh-normal);
+}
+
+/* ==========================================================================
+ * 4. 远端历史卡片 (Flat Glass Card)
+ * ========================================================================== */
+
+.st-webdav-card {
+  background: var(--nvui-block-bg);
+  border: 1px solid var(--nvui-glass-line);
+  border-radius: var(--nvui-radius-lg);
+  padding: var(--nvui-space-3) var(--nvui-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nvui-space-25);
+  box-shadow: var(--nvui-shadow-sm);
+  transition: background-color var(--nvui-transition), border-color var(--nvui-transition);
+}
+
+.st-webdav-card:hover {
+  background: var(--nvui-block-bg-2);
+}
+
+.st-webdav-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nvui-space-2);
+}
+
+.st-webdav-card-title {
+  font-weight: var(--nvui-fw-semibold);
+  font-size: var(--nvui-fs-md);
+  color: var(--nvui-text);
   display: flex;
   align-items: center;
   gap: var(--nvui-space-2);
-  padding: var(--nvui-space-2) var(--nvui-space-3);
-  border-radius: var(--nvui-radius-md);
-  font-size: var(--nvui-fs-sm);
-  background: var(--nvui-block-bg);
-  border-left: 3px solid var(--nvui-text-3);
+  word-break: break-all;
 }
 
-.st-webdav-status-banner.is-ok {
-  border-left-color: var(--nvui-ok);
-  background: var(--nvui-ok-bg);
-  color: var(--nvui-text);
+.st-webdav-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--nvui-space-3);
+  font-size: var(--nvui-fs-xs);
+  color: var(--nvui-text-3);
+  flex-wrap: wrap;
 }
 
-.st-webdav-status-banner.is-warn {
-  border-left-color: var(--nvui-warn);
-  background: var(--nvui-warn-bg);
-  color: var(--nvui-text);
+.st-webdav-card-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nvui-space-2);
+  font-size: var(--nvui-fs-xs);
+  color: var(--nvui-text-2);
+  background: var(--nvui-block-bg-2);
+  border: 1px solid var(--nvui-glass-line);
+  border-radius: var(--nvui-radius-sm);
+  padding: var(--nvui-space-15) var(--nvui-space-25);
+  margin-top: var(--nvui-space-1);
+  line-height: var(--nvui-lh-normal);
+  word-break: break-all;
 }
 
-.st-webdav-status-banner.is-danger {
-  border-left-color: var(--nvui-danger);
-  background: var(--nvui-danger-bg);
-  color: var(--nvui-text);
+.st-webdav-card-note i {
+  color: var(--nvui-accent);
+  margin-top: 2px;
+  flex-shrink: 0;
 }
