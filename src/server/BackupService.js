@@ -7,6 +7,7 @@ import { BACKUP_CATEGORIES } from './BackupCategories.js';
 import { resolveUserDir, getUserInfo, resolveRemoteDirectory } from './UserHelper.js';
 import { JobLock } from './JobLock.js';
 import { LOCAL_CONFIG_FILE, REMOTE_META_FILE } from './Constants.js';
+import { getPluginVersion } from './Version.js';
 
 /**
  * 本插件自身的本地配置文件名
@@ -168,7 +169,7 @@ export class BackupService {
       // 3. 构建元数据清单 backup_manifest.json (记录所属用户与环境)
       const manifest = {
         plugin: 'st-webdav',
-        version: '1.0.0',
+        version: getPluginVersion(),
         createdAt: now.toISOString(),
         user: {
           handle: userInfo.handle,

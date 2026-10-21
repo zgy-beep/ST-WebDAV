@@ -18,6 +18,52 @@
   // 标签页顺序固定，桌面 tabs 与手机 bottomNav 共用同一份 key 顺序
   const TAB_KEYS = ['backup', 'history', 'settings'];
 
+  /**
+   * 插件版本号
+   * ------------------------------------------------------------------
+   * 三级来源，逐级降级：
+   *   1) 服务端 /config 响应中的 pluginVersion（权威，来自 package.json）
+   *   2) 浏览器直接读取 manifest.json（次选，覆盖服务端未升级的情况）
+   *   3) 内联字面量（最后的兜底）
+   * 早期版本这里直接硬编码 'v1.0.0'，导致升级到 v1.1.0 时面板标题旁的
+   * 版本徽章仍显示旧版本号（版本号漂移）。
+   */
+  const PLUGIN_VERSION_FALLBACK = '1.1.0';
+  let PLUGIN_VERSION = PLUGIN_VERSION_FALLBACK;
+
+  /**
+   * 解析插件版本号（服务端下发值优先）
+   * @param {object} config /config 接口响应
+   * @returns {string}
+   */
+  function resolvePluginVersion(config) {
+    const fromServer = config?.pluginVersion;
+    if (typeof fromServer === 'string' && fromServer.trim() && fromServer !== 'unknown') {
+      return fromServer.trim();
+    }
+    return PLUGIN_VERSION;
+  }
+
+  /**
+   * 从浏览器直接读取 manifest.json 作为版本号的次级来源
+   * 服务端与前端分属两个部署单元，版本不一致时以此处为准
+   * @returns {Promise<string>}
+   */
+  async function loadVersionFromManifest() {
+    try {
+      const resp = await fetch('/scripts/extensions/third-party/ST-WebDAV/manifest.json', {
+        credentials: 'same-origin',
+      });
+      if (!resp.ok) return PLUGIN_VERSION;
+      const manifest = await resp.json();
+      const v = typeof manifest?.version === 'string' ? manifest.version.trim() : '';
+      if (v) PLUGIN_VERSION = v;
+    } catch {
+      // 静默回退：版本号显示失败不应影响面板功能
+    }
+    return PLUGIN_VERSION;
+  }
+
   let NVUI = null;
   let panel = null;
   let initPromise = null;
@@ -420,11 +466,15 @@
     if (panel) return panel;
 
     initPromise = (async () => {
-      // 先从服务端拉取配置以获取指定的 CDN 基础路径
+      // 先从 manifest.json 取版本号（本地静态文件，最快且不依赖服务端）
+      await loadVersionFromManifest();
+
+      // 再从服务端拉取配置（服务端版本号最权威，覆盖 manifest 的值）
       let cdnBase = DEFAULT_CDN;
       let cdnRejected = false;
       try {
         currentConfig = await apiCall('/config');
+        PLUGIN_VERSION = resolvePluginVersion(currentConfig);
         if (currentConfig.cdnBase) {
           if (sanitizeCdnBase(currentConfig.cdnBase)) {
             cdnBase = currentConfig.cdnBase;
@@ -446,7 +496,7 @@
       const created = NVUI.createPanel({
         id: 'st-webdav',
         title: 'WebDAV 备份与恢复',
-        version: 'v1.0.0',
+        version: `v${PLUGIN_VERSION}`,
         focusFallback: '#extensionsMenuButton',
         tabs: [
           { key: 'backup', label: '备份操作', icon: 'fa-solid fa-cloud-arrow-up' },
@@ -1583,6 +1633,7 @@
                 <span>备用 CDN 地址</span>
               </label>
               <span class="nvui-hint">当前模式：默认优先加载本地 Vendored UI-Kit（零网络延迟、100% 离线支持）。若本地缺失可使用上述 CDN 降级镜像。</span>
+              <span class="nvui-hint" id="st-webdav-version-hint" style="margin-top: var(--nvui-space-05);"></span>
             </div>
           </div>
         </div>
@@ -1732,6 +1783,18 @@
       setVal('cfg-cdn-base', cfg.cdnBase || DEFAULT_CDN);
 
       updateSettingsSummaries(cfg);
+
+      // 显示插件版本与 UI Kit 版本（排障时需要确认实际生效的版本）
+      const versionHint = pane.querySelector('#st-webdav-version-hint');
+      if (versionHint) {
+        const pluginVer = resolvePluginVersion(cfg);
+        const kitVer = (NVUI && NVUI.version) ? `v${NVUI.version}` : '未知';
+        versionHint.innerHTML = `<i class="fa-solid fa-circle-info" aria-hidden="true"></i> 插件版本 <code>${escapeHtml(pluginVer)}</code> · UI Kit 版本 <code>${escapeHtml(kitVer)}</code>`;
+      }
+      const kitSummary = pane.querySelector('#st-webdav-uikit-sum');
+      if (kitSummary) {
+        kitSummary.textContent = (NVUI && NVUI.version) ? `UI Kit v${NVUI.version}` : '本地 Vendored / CDN';
+      }
 
       const userHint = pane.querySelector('#cfg-user-dir-hint');
       if (userHint && cfg.currentUser) {

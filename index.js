@@ -10,12 +10,13 @@ import { BACKUP_CATEGORIES } from './src/server/BackupCategories.js';
 import { getUserInfo, resolveRemoteDirectory, resolveSharedDirectory, isAdminUser } from './src/server/UserHelper.js';
 import { sanitizeBackupFileName } from './src/server/PathGuard.js';
 import { JobLock } from './src/server/JobLock.js';
+import { getPluginVersion } from './src/server/Version.js';
 
 export const info = {
   id: 'st-webdav',
   name: 'ST-WebDAV',
   description: 'SillyTavern WebDAV 全量备份与恢复插件',
-  version: '1.1.0',
+  version: getPluginVersion(),
 };
 
 let configManager = null;
@@ -150,6 +151,7 @@ function registerRoutes(router) {
         effectiveRemoteDirectory: effectiveRemoteDir,
         sharedDirectory: resolveSharedDirectory(cfg.get('remoteDirectory') || 'SillyTavern_Backups'),
         isAdmin: isAdminUser(req.user),
+        pluginVersion: getPluginVersion(),
       });
     } catch (err) {
       res.status(500).json({ error: err.message });
