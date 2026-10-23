@@ -15,7 +15,7 @@
 - 🔄 **自动安全回滚快照 (Rollback Snapshot)**：在执行远端还原覆写前，服务端会自动在本地打包一份即时回滚快照；若还原异常可无损倒退。
 - ⏰ **定时备份与历史自动轮转**：支持配置定时自动备份周期（如每 24 小时）与远端备份保留份数（如保留最新 10 份），超额自动清理远端最旧备份，防止占满网盘空间。
 - 🤝 **跨账号跨用户共享备份**：可将任意备份「分享」到共享区，所有能访问该 WebDAV 路径的用户与账号都能看到并一键还原，无需互加好友、无需交换凭据；支持撤回分享，共享区文件互不干扰。
-- 🎨 **最新在线 UI Kit（Flat Glass 扁平玻璃设计）**：前端界面采用在线动态加载模式，实时跟随 [`zgy-beep/ui-kit`](https://github.com/zgy-beep/ui-kit) 仓库迭代；本地内置 v2.5.0 离线副本作为兜底；原生适配桌面端居中浮层（880px）与手机端底部抽屉 + 底部导航栏自适应切换。
+- 🎨 **最新在线 UI Kit（Flat Glass 扁平玻璃设计）**：前端界面采用在线动态加载模式，实时跟随 [`zgy-beep/ui-kit`](https://github.com/zgy-beep/ui-kit) 仓库迭代；本地内置 v2.7.0 离线副本作为兜底；原生适配桌面端居中浮层（880px）与手机端底部抽屉 + 底部导航栏自适应切换。
 
 ---
 
@@ -146,4 +146,4 @@ ln -s ../../../plugins/st-webdav public/scripts/extensions/third-party/ST-WebDAV
 ## 开源协议
 
 本项目基于 [MIT License](./LICENSE) 开源发布。
-UI 规范遵守 [SillyTavern NVUI Kit](https://github.com/zgy-beep/ui-kit) 设计契约（内置 v2.5.0 离线副本）。
+UI 规范遵守 [SillyTavern NVUI Kit](https://github.com/zgy-beep/ui-kit) 设计契约（内置 v2.7.0 离线副本）。

@@ -1,5 +1,5 @@
 /**
- * ST-WebDAV 前端扩展 · 基于 SillyTavern NVUI Kit v2.5.0 规范
+ * ST-WebDAV 前端扩展 · 基于 SillyTavern NVUI Kit v2.7.0 规范
  * -------------------------------------------------------------
  * 1. 优先加载本地 Vendored UI-Kit (tokens.css, components.css, nvui-api.js)，支持离线并安全降级；
  * 2. 严格遵循面板布局标准与无障碍契约 (dialog.nvui-tl, role, aria-*)；
@@ -14,7 +14,7 @@
   'use strict';
 
   const DEFAULT_CDN = 'https://cdn.jsdelivr.net/gh/zgy-beep/ui-kit@main';
-  const NVUI_MIN_VERSION = '2.5.0';
+  const NVUI_MIN_VERSION = '2.7.0';
   // 标签页顺序固定，桌面 tabs 与手机 bottomNav 共用同一份 key 顺序
   const TAB_KEYS = ['backup', 'history', 'settings'];
 
@@ -185,7 +185,7 @@
       ]);
 
       if (!vendoredScriptLoaded) {
-        // 强制重载：以本地 2.5.0 覆盖宿主的旧版本
+        // 强制重载：以本地 2.7.0 覆盖宿主的旧版本
         await loadScript(`${localVendorBase}/nvui-api.js`, 'nvui-js-api-local', true);
         vendoredScriptLoaded = true;
       }
@@ -654,7 +654,7 @@
             <div class="st-webdav-category-grid" id="st-webdav-cat-grid">
               ${categoryCatalog.map(c => `
                 <label class="st-webdav-cat-item">
-                  <input type="checkbox" class="st-webdav-cat-cb" value="${escapeHtml(c.id)}" ${c.defaultSelected ? 'checked' : ''} data-default="${c.defaultSelected ? 'true' : 'false'}">
+                  <input type="checkbox" class="nvui-checkbox st-webdav-cat-cb" value="${escapeHtml(c.id)}" ${c.defaultSelected ? 'checked' : ''} data-default="${c.defaultSelected ? 'true' : 'false'}">
                   <div class="st-webdav-cat-info">
                     <span class="st-webdav-cat-title">${escapeHtml(c.name)}</span>
                     <span class="st-webdav-cat-desc">${escapeHtml(c.desc)}</span>

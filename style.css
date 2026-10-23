@@ -1,5 +1,5 @@
 /**
- * ST-WebDAV 业务样式 · 严格遵守 SillyTavern NVUI Kit v2.5.0 规范
+ * ST-WebDAV 业务样式 · 严格遵守 SillyTavern NVUI Kit v2.7.0 规范
  * ------------------------------------------------------------------
  * 1. Kit 令牌与组件契约由运行时统一供给：ensureNVUI() 以 <link> 注入
  *    src/client/vendor/ui-kit/ 下的 tokens.css 与 components.css，
@@ -134,9 +134,9 @@
   border-color: var(--nvui-accent);
 }
 
+.st-webdav-cat-item .nvui-checkbox,
 .st-webdav-cat-item input[type="checkbox"] {
   margin-top: var(--nvui-space-05);
-  accent-color: var(--nvui-accent);
   cursor: pointer;
 }
 

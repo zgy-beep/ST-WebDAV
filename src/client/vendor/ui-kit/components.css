@@ -1,7 +1,7 @@
 /**
  * SillyTavern 插件通用 UI Kit · 组件样式
  * ------------------------------------------------------------------
- * 版本：ui-kit v2.5.0；依赖：tokens.css（必须先引入或先拼进来）
+ * 版本：ui-kit v2.7.0；依赖：tokens.css（必须先引入或先拼进来）
  *
  * 本目录是独立项目（自带 package.json / LICENSE / CHANGELOG / test/），
  * 可整目录复制/移动到任意文件夹或仓库，不依赖任何外部文件。
@@ -17,12 +17,13 @@
  *   1. 所有选择器都必须以 .nvui- / dialog.nvui-tl 开头，禁止裸元素选择器，
  *      避免污染酒馆宿主与同页其它扩展；
  *   2. 颜色一律走 token（禁止硬编码 #hex / rgb()），换主题只改 tokens.css；
- *   3. !important 只允许出现在「对抗宿主全局 checkbox 样式」的隔离规则与
- *      prefers-reduced-motion 降级块里。
+ *   3. !important 只允许出现在「对抗宿主全局 checkbox / 表单控件样式」的隔离规则与
+ *      prefers-reduced-motion 降级块里；全文件合计 14 条（原有 7 + 宿主表单隔离 7；
+ *      v2.7.0 仅把既有 7 条扩展到 opt-in 的 .nvui-form-scope，不新增声明）。
  *
  * 组件清单（预览：ui-kit/preview.html；规范：ui-kit/README.md）：
  *   作用域 / top-layer 载体 / 浮层与弹窗（玻璃 + 进出场）/ 图标按钮 / 按钮与按钮组 /
- *   胶囊开关行 / 输入行 / 标签页（可选粘连指示器）/ 折叠面板（高度动画）/ 区块标题 / 提示与告警 /
+ *   胶囊开关行 / 独立复选框 / 输入行 / 标签页（可选粘连指示器）/ 折叠面板（高度动画）/ 区块标题 / 提示与告警 /
  *   状态行与状态点 / 徽标与标签块 / 空态与加载 / 骨架屏与进度条 / 悬浮面板 / 工具提示 /
  *   吐司 / 玻璃工具类与实心模式 / 布局工具 / 动效工具类 /
  *   SillyTavern 插件面板布局标准（桌面居中面板 / 手机底部抽屉 + 底部导航）。
@@ -514,7 +515,12 @@ dialog.nvui-tl > .nvui-toast-stack {
     transition: background-color var(--nvui-transition), transform var(--nvui-duration-fast) var(--nvui-ease-standard);
 }
 
-/* 压掉宿主的 ::before 对勾（元素级隔离见组件说明；这是唯一允许 !important 的地方） */
+/* 压掉宿主的 ::before 对勾（.nvui-switch-row 与独立 .nvui-checkbox 共用；
+ * 宿主 checkbox 隔离是 !important 白名单里的既有类别，不扩张到其它属性） */
+.nvui-checkbox[type="checkbox"]::before,
+.nvui-checkbox[type="checkbox"]:checked::before,
+.nvui-checkbox[type="checkbox"]:indeterminate::before,
+.nvui-checkbox[type="checkbox"]:focus-visible::before,
 .nvui-switch-row input[type="checkbox"]::before,
 .nvui-switch-row input[type="checkbox"]:checked::before,
 .nvui-switch-row input[type="checkbox"]:focus-visible::before {
@@ -568,6 +574,96 @@ dialog.nvui-tl > .nvui-toast-stack {
 }
 
 .nvui-switch-row input[type="checkbox"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+ * 6.1 独立复选框（批量选择；与 .nvui-switch-row 胶囊开关互补）
+ * --------------------------------------------------------------------------
+ * DOM：<input type="checkbox" class="nvui-checkbox">
+ * 16px 小方块，保留原生 input 语义（Tab / Space / :checked / :indeterminate）。
+ *
+ * 宿主兼容：酒馆给所有 input[type=checkbox] 挂了 appearance:none +
+ * display:grid + 显式宽高/描边/底色/阴影/transform/filter + ::before 对勾。
+ * 这些元素选择器（0,1,1）会压过裸类（0,1,0）。组件选择器统一写成
+ * .nvui-checkbox[type="checkbox"]（0,2,0），只命中 kit 自己的 class，
+ * 既压过宿主元素规则，又不接管宿主其它 checkbox，且不新增 !important。
+ * ========================================================================== */
+.nvui-checkbox[type="checkbox"] {
+    position: relative;
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--nvui-line-2);
+    border-radius: var(--nvui-radius-sm);
+    background: var(--nvui-input-bg);
+    box-shadow: none;
+    outline: none;
+    overflow: visible;
+    filter: none;
+    transform: none;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    vertical-align: middle;
+    box-sizing: border-box;
+    transition: background-color var(--nvui-transition),
+        border-color var(--nvui-transition);
+}
+
+/* 对勾：::after + border 旋转（与开关滑钮同一套纯 CSS 思路） */
+.nvui-checkbox[type="checkbox"]::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 4px;
+    height: 8px;
+    border: solid var(--nvui-on-accent);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) scale(0.8);
+    opacity: 0;
+    transition: opacity var(--nvui-transition), transform var(--nvui-transition);
+}
+
+/* hover 只改描边；选中/部分选中保持主色，故状态规则放在 hover 之后 */
+.nvui-checkbox[type="checkbox"]:hover {
+    border-color: var(--nvui-dash);
+}
+
+.nvui-checkbox[type="checkbox"]:checked,
+.nvui-checkbox[type="checkbox"]:indeterminate {
+    background: var(--nvui-accent);
+    border-color: var(--nvui-accent);
+}
+
+.nvui-checkbox[type="checkbox"]:checked::after {
+    opacity: 1;
+    transform: rotate(45deg) scale(1);
+}
+
+/* 部分选中：横杠。原生 :indeterminate 由 JS 属性设置 */
+.nvui-checkbox[type="checkbox"]:indeterminate::after {
+    left: 3px;
+    top: 6px;
+    width: 8px;
+    height: 2px;
+    border: 0;
+    background: var(--nvui-on-accent);
+    opacity: 1;
+    transform: none;
+}
+
+.nvui-checkbox[type="checkbox"]:focus-visible {
+    outline: var(--nvui-focus-ring-w) solid var(--nvui-focus-ring-color);
+    outline-offset: var(--nvui-focus-ring-offset);
+}
+
+.nvui-checkbox[type="checkbox"]:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
@@ -662,6 +758,88 @@ dialog.nvui-tl > .nvui-toast-stack {
 .nvui-input.is-path {
     width: 200px;
     max-width: 60%;
+}
+
+/* --------------------------------------------------------------------------
+ * 7.1 宿主表单隔离（ISSUES #9）
+ * --------------------------------------------------------------------------
+ * 宿主主题常用「元素选择器 + !important」重写 input / select / textarea，
+ * 裸类 .nvui-input（0,1,0）即使作用域再深也赢不过 !important 声明。
+ * 这里在 kit 的两个真实载体 dialog.nvui-tl / .nvui-panel，以及显式 opt-in 的
+ * .nvui-form-scope 容器内夺回 token 皮肤；三者之外不接管宿主控件，保持隔离有界。
+ *
+ * v2.7.0：新增 .nvui-form-scope（显式放在任意自定义容器上才生效）。
+ * 只在既有 7 条声明里追加同一组有界选择器；dialog.nvui-tl / .nvui-panel 的选择器与
+ * specificity 保持原样，不新增声明、不新增 !important、不引入隐式作用域或全局重置。
+ * .nvui-form-scope 自身没有任何布局/定位/遮罩/模态规则，只作为隔离根的显式标记。
+ *
+ * !important 只给被宿主 !important 夺走的 4 类属性，共 7 条声明：
+ *   background / color / border（基础态 3）+ margin（select 1）+ hover background（1）
+ *   + option / optgroup 的 background / color（2）。圆角等用更高特异性恢复，不占 !important 预算。
+ * hover 的 background 必须同作用域 + !important 还原，否则会被基础态压掉。
+ * option / optgroup 是宿主下拉列表的最终渲染层，必须单独给底色与文字色。
+ * -------------------------------------------------------------------------- */
+dialog.nvui-tl input.nvui-input,
+dialog.nvui-tl select.nvui-input,
+dialog.nvui-tl textarea.nvui-input,
+.nvui-panel input.nvui-input,
+.nvui-panel select.nvui-input,
+.nvui-panel textarea.nvui-input,
+.nvui-form-scope input.nvui-input,
+.nvui-form-scope select.nvui-input,
+.nvui-form-scope textarea.nvui-input {
+    background: var(--nvui-input-bg) !important;
+    color: var(--nvui-text) !important;
+    border: none !important;
+    border-radius: var(--nvui-radius-sm);
+}
+
+/* 宿主 select 常见 margin: ... 0 !important；只对 select 还原，避免无谓扩大 */
+dialog.nvui-tl select.nvui-input,
+.nvui-panel select.nvui-input,
+.nvui-form-scope select.nvui-input {
+    margin: 0 !important;
+}
+
+/* 基础态 background !important 会压掉普通优先级的 :hover，必须同作用域还原 */
+dialog.nvui-tl input.nvui-input:hover,
+dialog.nvui-tl select.nvui-input:hover,
+dialog.nvui-tl textarea.nvui-input:hover,
+.nvui-panel input.nvui-input:hover,
+.nvui-panel select.nvui-input:hover,
+.nvui-panel textarea.nvui-input:hover,
+.nvui-form-scope input.nvui-input:hover,
+.nvui-form-scope select.nvui-input:hover,
+.nvui-form-scope textarea.nvui-input:hover {
+    background: var(--nvui-block-bg) !important;
+}
+
+/* option / optgroup 皮肤：宿主 select option 的 !important 底色会直接带进下拉列表。
+ * ISSUES #12：optgroup 行同样需要 token 底色；否则 Windows Chrome 原生弹层会把
+ * group 行画在浅色默认底上，与 --nvui-text 形成白底浅字。
+ * 复用本规则已有的 2 条 !important 声明，不新增声明、不扩大 !important 预算；
+ * .nvui-form-scope 仅复用既有 option 选择器，不另起规则（门禁见 test-ui-kit.js）。 */
+dialog.nvui-tl select.nvui-input option,
+dialog.nvui-tl select.nvui-input optgroup,
+.nvui-panel select.nvui-input option,
+.nvui-panel select.nvui-input optgroup,
+.nvui-form-scope select.nvui-input option {
+    background: var(--nvui-bg-2) !important;
+    color: var(--nvui-text) !important;
+}
+
+/* ISSUES #12：原生 select 弹层跟随 Kit 主题。只作用于两个真实载体，载体外保持
+ * 宿主 color-scheme；浅色主题类可放在祖先或载体自身上。 */
+dialog.nvui-tl select.nvui-input,
+.nvui-panel select.nvui-input {
+    color-scheme: dark;
+}
+
+.nvui-theme-light dialog.nvui-tl select.nvui-input,
+.nvui-theme-light .nvui-panel select.nvui-input,
+dialog.nvui-tl.nvui-theme-light select.nvui-input,
+.nvui-panel.nvui-theme-light select.nvui-input {
+    color-scheme: light;
 }
 
 /* ==========================================================================
@@ -890,11 +1068,14 @@ dialog.nvui-tl > .nvui-toast-stack {
     display: grid;
     grid-template-rows: 0fr;
     overflow: hidden;
-    transition: grid-template-rows var(--nvui-duration-slow) var(--nvui-ease-emphasized);
+    visibility: hidden;
+    transition: grid-template-rows var(--nvui-duration-slow) var(--nvui-ease-emphasized),
+        visibility var(--nvui-duration-slow) var(--nvui-ease-emphasized);
 }
 
 .nvui-acc.is-open .nvui-acc-body {
     grid-template-rows: 1fr;
+    visibility: visible;
 }
 
 /* 裁切层：min-height:0 让 0fr 真正塌陷，overflow:hidden 裁掉展开内容。
@@ -1864,7 +2045,7 @@ dialog.nvui-tl > .nvui-toast-stack {
  *   </div></dialog>
  *
  * 响应式规则（断点 600px，与 Kit 其它组件一致）：
- *   电脑 >600px：overlay 居中、panel 定宽 --nvui-panel-width（880px）并限高 88vh；
+ *   电脑 >600px：overlay 居中、panel 定宽 --nvui-panel-width（720px）并限高 88vh；
  *                显示顶部 tabs，隐藏底部导航与拖拽把手。
  *   手机 <=600px：overlay 底部对齐、panel 全宽底部抽屉（92dvh、仅上圆角）；
  *                隐藏顶部 tabs，显示拖拽把手与底部图标导航；底部导航自动加 safe-area。
@@ -1876,7 +2057,7 @@ dialog.nvui-tl > .nvui-toast-stack {
 .nvui-panel {
     display: flex;
     flex-direction: column;
-    /* v2.1.1：固定尺寸，折叠/展开内容不会改变面板外框（宽 880 上限、高 88vh） */
+    /* v2.1.1：固定尺寸，折叠/展开内容不会改变面板外框（宽 720 上限、高 88vh） */
     width: min(var(--nvui-panel-width), 100%);
     height: var(--nvui-panel-max-h);
     max-height: var(--nvui-panel-max-h);
@@ -1918,6 +2099,81 @@ dialog.nvui-tl > .nvui-toast-stack {
     display: inline-flex;
     align-items: center;
     gap: var(--nvui-space-1);
+    flex-shrink: 0;
+}
+
+/* ==========================================================================
+ * v2.5.0 面板头部标准化：主题切换按钮与更新提示胶囊
+ * ========================================================================== */
+
+/* 1. 主题切换按钮（.nvui-theme-toggle）
+ * 继承 .nvui-icon-btn 扁平无边框风格，内置日/月图标平滑过渡动效 */
+.nvui-theme-toggle i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform var(--nvui-duration-base) var(--nvui-ease-standard),
+        opacity var(--nvui-duration-base) var(--nvui-ease-standard),
+        color var(--nvui-duration-fast) var(--nvui-ease-standard);
+}
+
+.nvui-theme-toggle:hover i {
+    transform: rotate(20deg) scale(1.08);
+    color: var(--nvui-text);
+}
+
+.nvui-theme-toggle:active i {
+    transform: rotate(45deg) scale(0.92);
+}
+
+/* 2. 版本更新提示胶囊（.nvui-update-pill）
+ * Flat Glass 扁平优先原则：仅使用淡底 + 文字，严禁 1px 实体外描边。
+ * 具备完整 WAI-ARIA 交互态与统一焦点环 */
+.nvui-update-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--nvui-space-1);
+    flex-shrink: 0;
+    padding: 2px var(--nvui-space-2);
+    border: none;
+    outline: none;
+    border-radius: var(--nvui-radius-pill);
+    background: var(--nvui-accent-bg);
+    color: var(--nvui-accent-2);
+    font-size: var(--nvui-fs-xs);
+    font-weight: var(--nvui-fw-medium);
+    line-height: var(--nvui-lh-tight);
+    vertical-align: middle;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background-color var(--nvui-transition),
+        color var(--nvui-transition),
+        transform var(--nvui-duration-fast) var(--nvui-ease-standard);
+}
+
+.nvui-update-pill:hover {
+    background: var(--nvui-accent-bg-hover);
+    color: var(--nvui-text);
+}
+
+.nvui-update-pill:active {
+    transform: scale(0.95);
+}
+
+.nvui-update-pill:focus-visible {
+    outline: var(--nvui-focus-ring-w) solid var(--nvui-focus-ring-color);
+    outline-offset: var(--nvui-focus-ring-offset);
+}
+
+.nvui-update-pill:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* 3. 面板标题栏内部徽标与胶囊防挤压守卫 */
+.nvui-panel-title > .nvui-badge,
+.nvui-panel-title > .nvui-update-pill {
     flex-shrink: 0;
 }
 
@@ -2159,7 +2415,8 @@ dialog.nvui-tl > .nvui-toast-stack {
  *       原来只有层 1 生效 → 组件动画不会降级（无障碍红线被绕过）。
  *       点名而非通配，是为了**不波及宿主元素**（宿主 DOM 树庞大，通配会误伤）。
  *
- * 两层共用同一组 !important 声明（合计 5 个，预算 ≤ 8）。
+ * 两层共用同一组 !important 声明（本块 5 个）；§7.1 宿主表单隔离 7 个。
+ * 全文件合计 14 个（原有 7 + 宿主表单隔离 7）。
  */
 @media (prefers-reduced-motion: reduce) {
     .nvui-scope *,
@@ -2175,6 +2432,7 @@ dialog.nvui-tl > .nvui-toast-stack {
         .nvui-icon-btn,
         .nvui-btn,
         .nvui-switch-row,
+        .nvui-checkbox,
         .nvui-input,
         .nvui-tabs-indicator,
         .nvui-tab,
@@ -2195,7 +2453,9 @@ dialog.nvui-tl > .nvui-toast-stack {
         .nvui-pop-in,
         .nvui-stagger,
         .nvui-pulse,
-        .nvui-bottom-nav-item
+        .nvui-bottom-nav-item,
+        .nvui-theme-toggle,
+        .nvui-update-pill
     ),
     :is(
         .nvui-overlay,
@@ -2203,6 +2463,7 @@ dialog.nvui-tl > .nvui-toast-stack {
         .nvui-icon-btn,
         .nvui-btn,
         .nvui-switch-row,
+        .nvui-checkbox,
         .nvui-input,
         .nvui-tabs-indicator,
         .nvui-tab,
@@ -2223,7 +2484,9 @@ dialog.nvui-tl > .nvui-toast-stack {
         .nvui-pop-in,
         .nvui-stagger,
         .nvui-pulse,
-        .nvui-bottom-nav-item
+        .nvui-bottom-nav-item,
+        .nvui-theme-toggle,
+        .nvui-update-pill
     )::before,
     :is(
         .nvui-overlay,
@@ -2231,6 +2494,7 @@ dialog.nvui-tl > .nvui-toast-stack {
         .nvui-icon-btn,
         .nvui-btn,
         .nvui-switch-row,
+        .nvui-checkbox,
         .nvui-input,
         .nvui-tabs-indicator,
         .nvui-tab,
@@ -2251,9 +2515,12 @@ dialog.nvui-tl > .nvui-toast-stack {
         .nvui-pop-in,
         .nvui-stagger,
         .nvui-pulse,
-        .nvui-bottom-nav-item
+        .nvui-bottom-nav-item,
+        .nvui-theme-toggle,
+        .nvui-update-pill
     )::after,
     .nvui-stagger > *,
+    .nvui-theme-toggle i,
     .nvui-switch-row input[type="checkbox"],
     .nvui-switch-row input[type="checkbox"]::after {
         animation-duration: 0.01ms !important;
@@ -2296,38 +2563,13 @@ dialog.nvui-tl > .nvui-toast-stack {
         backdrop-filter: none;
         box-shadow: none;
     }
-}
 
-/* ==========================================================================
- * v2.5.0 规范新增
- * --------------------------------------------------------------------------
- * 补齐四个此前「客户端已使用但 CSS 缺失」的类名，使前端调用不再静默失效。
- * 全部使用既有 --nvui-* 令牌推导，零硬编码颜色。
- * ========================================================================== */
+    .nvui-btn:not([hidden]),
+    .nvui-icon-btn {
+        border: 1px solid ButtonText;
+    }
 
-/* 语义色提示：is-warn 的成功 / 危险兄弟类（原仅支持 is-warn） */
-.nvui-hint.is-ok {
-    color: var(--nvui-ok);
-}
-
-.nvui-hint.is-danger {
-    color: var(--nvui-danger);
-}
-
-/* 超小按钮：补齐尺寸阶梯 is-default → is-sm → is-xs */
-.nvui-btn.is-xs {
-    min-height: 22px;
-    padding: var(--nvui-space-05) var(--nvui-space-15);
-    font-size: var(--nvui-fs-2xs);
-}
-
-/* 低强调徽标：表面色底 + 弱文本色，不抢视觉焦点 */
-.nvui-badge.is-subtle {
-    background: var(--nvui-block-bg);
-    color: var(--nvui-text-3);
-}
-
-/* 主色进度条：与默认 .nvui-progress-bar 同色，使 is-primary 类名合法化 */
-.nvui-progress.is-primary .nvui-progress-bar {
-    background: var(--nvui-accent);
+    .nvui-tab.is-active {
+        border-bottom: 3px solid Highlight;
+    }
 }

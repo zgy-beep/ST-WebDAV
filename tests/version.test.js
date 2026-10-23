@@ -162,3 +162,22 @@ test('Version: 前端要求的 UI Kit 最低版本不超过内置副本版本', 
     `内置 UI Kit 版本 (${bundledVer}) 不得低于前端要求的最低版本 (${minVer})`
   );
 });
+
+test('Version: 文档与准则中的 UI Kit 版本与内置副本一致', () => {
+  const apiSrc = fs.readFileSync(path.join(ROOT, 'src', 'client', 'vendor', 'ui-kit', 'nvui-api.js'), 'utf-8');
+  const bundledVer = apiSrc.match(/var VERSION = '([^']+)'/)?.[1];
+  assert.ok(bundledVer);
+
+  const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf-8');
+  const agents = fs.readFileSync(path.join(ROOT, 'AGENTS.md'), 'utf-8');
+
+  assert.ok(
+    readme.includes(`内置 v${bundledVer} 离线副本`),
+    `README.md 应当引用内置 UI Kit 当前版本 v${bundledVer}`
+  );
+  assert.ok(
+    agents.includes(`当前 v${bundledVer}`),
+    `AGENTS.md 应当引用内置 UI Kit 当前版本 v${bundledVer}`
+  );
+});
+
