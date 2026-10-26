@@ -237,7 +237,7 @@ fix(runtime): 修复设置重载后 context 失效
 
 ### 4.3 PR 描述模板
 
-按下列结构填写（仓库暂无 `.github/PULL_REQUEST_TEMPLATE.md`，需手动复制本节）。必填项：
+按下列结构填写（仓库已提供 `.github/PULL_REQUEST_TEMPLATE.md`，创建 PR 时自动带出，本节与其同步维护）。必填项：
 
 ```markdown
 ## 变更内容

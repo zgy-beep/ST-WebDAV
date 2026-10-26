@@ -69,7 +69,7 @@ fix button                    ← 英文、无类型
 ### 3.1 环境信息
 
 ```
-- ui-kit 版本：v2.5.0
+- ui-kit 版本：v2.8.0
 - 宿主环境：SillyTavern 1.19.0（浏览器：Chrome 131）
 - 主题：深色 / 浅色
 - 本项目集成方式：整目录复制内置
@@ -159,7 +159,7 @@ isTrusted=true，未被浏览器拦截。
 
 ## 环境
 
-- ui-kit 版本：v2.5.0
+- ui-kit 版本：v2.8.0
 - 宿主：SillyTavern 1.19.0
 - 浏览器：Chrome 131
 - 主题：深色
@@ -319,5 +319,5 @@ const panel = NVUI.createPanel({
 
 ## 9. Issue 模板文件
 
-上游仓库若提供 Issue 模板，优先使用其模板。本项目**尚未**创建 `.github/ISSUE_TEMPLATE/` 副本，
-提 issue 时直接使用 §4（bug）与 §5（feature request）的模板正文即可。
+本项目已提供 `.github/ISSUE_TEMPLATE/ui-kit-bug.md` 与 `ui-kit-feature.md` 两个模板（与 §4 / §5 同步维护），
+提 issue 时在 GitHub 上直接选用对应模板即可。

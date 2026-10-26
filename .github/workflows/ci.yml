@@ -1,0 +1,47 @@
+name: CI
+
+# 只守主干：push 到 main 与面向 main 的 PR 都跑，红灯不得合并（见 git-workflow.md §4.4）。
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# 同一分支的新推送取消上一次未完成的运行，避免排队浪费。
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Node 22 + pnpm + npm test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v5
+
+      # 依赖由 pnpm 管理（仓库锁文件为 pnpm-lock.yaml，lockfileVersion 9.0），
+      # 固定 pnpm 9 与锁文件格式对齐；pnpm 需先于 setup-node 就位，缓存才能生效。
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: 安装 Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # --frozen-lockfile：锁文件与 package.json 不一致时直接失败，防止依赖漂移。
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      # 测试入口以 package.json 的 test 脚本为准，即 node --test tests/*.test.js。
+      - name: 运行测试
+        run: npm test

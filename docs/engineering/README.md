@@ -13,6 +13,7 @@
 | [`versioning.md`](versioning.md) | 版本号递增时机与 CHANGELOG 维护 | 所有人 |
 | [`directory-structure.md`](directory-structure.md) | 文件该放哪、依赖怎么分层 | 所有人 |
 | [`ai-collaboration.md`](ai-collaboration.md) | 人机分工、任务拆解、验收标准 | 人 + AI |
+| [`manual-qa.md`](manual-qa.md) | 发版实机验收项、操作步骤与执行记录（自动化覆盖不到的部分） | 发版负责人 / 验证人 |
 | [`../ui-kit/issue-reporting.md`](../ui-kit/issue-reporting.md) | 向上游提 issue 的格式与跟踪 | 发现 ui-kit 缺陷时 |
 | [`../decisions/README.md`](../decisions/README.md) | 架构决策记录（ADR）的写法与时机 | 遇到架构选择时 |
 
@@ -37,6 +38,7 @@ git-workflow.md（分支 + 提交 + PR 模板）
 
 ```
 versioning.md（递增哪一位）
+    →  manual-qa.md（实机验收项与记录）
     →  CHANGELOG.md（写条目）
     →  git-workflow.md §5（打标签与发布）
 ```
@@ -87,9 +89,10 @@ AGENTS.md §6（铁律：不在本地改写）
 |---|---|---|
 | 提交信息校验 | `scripts/validate-commit-msg.mjs` | 提交时自动拦截不合规信息（**已落地**） |
 | 版本号守卫 | `tests/version.test.js` | 强制 `package.json` / `manifest.json` / 服务端版本一致（**已落地**） |
+| 持续集成（CI） | `.github/workflows/ci.yml` | push / PR 到 `main` 时自动跑 `npm test`，红灯不得合并（**已落地**） |
 | 上游问题台账 | `docs/ui-kit/known-issues.md` | 跟踪 ui-kit 缺陷直到同步修复（**已落地**） |
-| PR 描述模板 | `.github/PULL_REQUEST_TEMPLATE.md` | **待创建** —— 当前按下方模板手动填写 |
-| Issue 模板 | `.github/ISSUE_TEMPLATE/ui-kit-*.md` | **待创建** —— 格式见 `../ui-kit/issue-reporting.md` |
+| PR 描述模板 | `.github/PULL_REQUEST_TEMPLATE.md` | 发起 PR 时自动带出描述结构与自查清单（**已落地**） |
+| Issue 模板 | `.github/ISSUE_TEMPLATE/ui-kit-*.md` | 上报 ui-kit 问题时带出必填要素与自查清单（**已落地**） |
 
 **接入 git hook（可选）：**
 
