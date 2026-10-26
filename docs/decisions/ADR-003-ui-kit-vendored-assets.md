@@ -44,7 +44,7 @@ AGENTS.md §6 的硬规则是：不在本地改写 ui-kit、发现缺陷先提�
 - **4 资产全量内置（含 `tokens.json`）**：可以让上游 `downstream-check.js` 原样运行，
   但该脚本还要求下游 `package.json` 的 version 等于 kit 版本
   （上游 `test/downstream-check.js:27-28,47`），本项目 `package.json` 是插件版本
-  （当前 1.1.0），永远无法满足；多同步一个文件并不能省掉自建守卫，已否决。
+  （决策时 1.1.0，与 kit 版本语义不同），永远无法满足；多同步一个文件并不能省掉自建守卫，已否决。
 - **只靠 CDN 或宿主自带版本**：离线可用性、版本确定性与防注入都变差
   （`src/client/index.js:179` 注释；AGENTS.md §6.4）；已否决。
 - **升级时只换 CSS 或只换 JS**：上游明确「只换 CSS 会缺 API，只换 JS 会缺样式」
