@@ -14,6 +14,10 @@
 > **批次说明（2026-10-26/27 v1.2.1–v1.2.2）**：补做 v01 历史密文兼容与多账号共享区（隔离 harness），
 > 并补测刷新 / 进度条 / 吐司 / 内联确认 / 移动端；验收发现「共享目录模式分享归属」缺口，
 > 修复后（v1.2.2）同批回归通过。HOST-10 与 UI-05 因 headless 能力限制记 BLOCKED。
+>
+> **批次说明（2026-10-27 v1.3.0）**：用隔离 harness 与 4 套本地真实 WebDAV 实现补齐定时备份、
+> 历史轮转、快照上限、加密共享还原、空口令拦截、本地优先等收口项；商用服务端因无账号仍 BLOCKED；
+> HOST-10 与 UI-05 转为「风险接受」（headless 不可模拟，等价分支已验证），依据见 `../ROADMAP.md`。
 
 - 适用对象：ST-WebDAV 发版前的实机验收，即自动化测试覆盖不到的部分。
 - 关联流程：[`versioning.md`](versioning.md) §8 第 ④ 步「全量验证」。
@@ -114,6 +118,11 @@
 | 2026-10-26 | DAV-C05 InfiniCLOUD | 1.2.0 | 2.8.0 | — | 未执行 | 无测试账号，DAV-01～06 未执行 |
 | 2026-10-26 | DAV-C06 自建 WebDAV | 1.2.0 | 2.8.0 | webdav-e2e / restore-harness | PASS | 自建 WsgiDAV 4.3.5（Python 3.11.16 / Cheroot 11.1.2）：DAV-01 连接 207、DAV-02 核心/自定义/加密备份、DAV-03 列表、DAV-05 删除、DAV-06 日志与凭据检查均 PASS；DAV-04 真实实例还原未执行（隔离 harness 等价验证） |
 | 2026-10-26 | DAV-C06 自建 WebDAV（v1.2.1 修复回归） | 1.2.1 | 2.8.0 | webdav-e2e | PASS | 仅传 categories 未传 scope 的备份现为 custom（203,601 B，元数据与实际内容一致；v1.2.0 曾回落 core 2.86 MB）；并发备份第二次返回 409（v1.2.0 为 500）；测试文件已清理，远端回到基线 |
+| 2026-10-27 | WsgiDAV 4.4.0（真实实现矩阵） | 1.2.2 | 2.8.0 | dav-matrix | PASS | DAV-01~06 + 04b 全 PASS（207；备份 zip 可 GET 取回并解压校验；分享 via=COPY 201；`.enc.zip` 魔数 STWBDV02） |
+| 2026-10-27 | rclone v1.75.2（真实实现矩阵） | 1.2.2 | 2.8.0 | dav-matrix | PASS | 全 PASS；COPY/MOVE 201；LOCK token 为数字；中文文件名正常 |
+| 2026-10-27 | dufs 0.47.0（真实实现矩阵） | 1.2.2 | 2.8.0 | dav-matrix | PASS | 全 PASS；COPY/MOVE 返 204、UNLOCK 200；PROPFIND 无 Server/DAV 头（`/test` 的 server 字段退化为兜底值，非功能缺陷） |
+| 2026-10-27 | webdav-server 2.6.2（真实实现矩阵） | 1.2.2 | 2.8.0 | dav-matrix | PASS | 全 PASS；PROPFIND href 为绝对 URL；LOCK token urn:uuid；中文文件名正常 |
+| 2026-10-27 | 商用 5 家（坚果云/Alist/群晖/Nextcloud/InfiniCLOUD） | — | — | — | BLOCKED | 无测试账号，以 4 套本地真实实现矩阵替代协议覆盖；未编造、未借用他人凭据 |
 
 > 本批说明：仅在自建 WsgiDAV 4.3.5 上实测（对应 DAV-C06）；坚果云 / Alist / 群晖 / Nextcloud /
 > InfiniCLOUD 无测试账号，统一记「未执行」，不得按 PASS 计。
@@ -147,7 +156,7 @@
 | 2026-10-26 | 1.2.0 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | 未执行 | HOST-04 Esc、HOST-05 遮罩、HOST-06 焦点归还、HOST-07 焦点陷阱、HOST-08 刷新、HOST-10 安全区未执行；Esc / 焦点两项下轮复验补测 |
 | 2026-10-26 | 1.2.1 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | v1.2.1 补测：HOST-04 Esc（多浮层时只关栈顶、不误关宿主模态）、HOST-05 遮罩（点内部不关）、HOST-06 焦点归还到 #extensionsMenuButton、HOST-07 焦点陷阱（Tab×14 / Shift+Tab×10 零逃逸）、HOST-11 连续开关 3 轮无残留；HOST-08 刷新、HOST-10 安全区仍未执行 |
 | 2026-10-26 | 1.2.1 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | HOST-08 刷新（dialog/panel 节点身份不变、仍停留 history、/backups 请求 3→4、info 吐司可手动关闭）；HOST-07 扩展到「服务设置」tab（Tab×13 零逃逸）；移动端 390×844 Esc 关闭与焦点归还到 #extensionsMenuButton |
-| 2026-10-26 | 1.2.1 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | BLOCKED | HOST-10 移动端安全区：headless Chrome 156 无 `Emulation.setSafeAreaInsets`，`env(safe-area-inset-bottom)` 实测 0px，无法模拟非零安全区；需真机或支持该能力的浏览器 |
+| 2026-10-26 | 1.2.1 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | BLOCKED | HOST-10 移动端安全区：headless Chrome 156 无 `Emulation.setSafeAreaInsets`，`env(safe-area-inset-bottom)` 实测 0px，无法模拟非零安全区；需真机或支持该能力的浏览器。**2026-10-27 风险接受**：kit 规则 `calc(var(--nvui-space-1) + env(safe-area-inset-bottom))` 在非刘海环境解析为 0px 与实测一致，现代浏览器均支持 env()，待有真机时补测（详见 ROADMAP） |
 
 > 本批说明：真实宿主 SillyTavern 1.19.0（Windows）+ 系统 Chrome headless，只读交互（打开 / 切页 /
 > 关闭），未触发备份、还原、删除等写操作；pageerror=0，console 无插件相关报错。
@@ -182,7 +191,8 @@
 | 2026-10-26 | 1.2.0 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | 未执行 | UI-04 body.no-blur 回退、UI-05 浏览器不支持 backdrop-filter、UI-09 进度条推进、UI-10 吐司与内联确认、UI-11 阻断 jsdelivr 验本地优先，均未执行 |
 | 2026-10-26 | 1.2.1 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | v1.2.1 补测 UI-04：body.no-blur 后 `<html>` 加 .nvui-glass-fallback、面板 97% 近不透明且 backdrop-filter=none、文字对比度 13.72/12.47；移除后玻璃恢复 blur(48px)；UI-05/09/10/11 仍未执行 |
 | 2026-10-26 | 1.2.1 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | UI-09 进度条：53 次采样 aria-valuenow 0→90→100 单调不减、成功文案 1172ms、进度区 3646ms 后折叠归零；UI-10 吐司自动消失（约 3.2–3.4s）+ 删除为面板内联确认区（原生 dialog 触发 0 次，取消后文件仍在） |
-| 2026-10-26 | 1.2.1 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | BLOCKED | UI-05 浏览器不支持 backdrop-filter：headless 无法禁用该 CSS 能力（CDP `setDisabledFeatures` 不存在）；`prefers-reduced-transparency` 仅作回退分支旁证，不按 UI-05 PASS 计 |
+| 2026-10-26 | 1.2.1 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | BLOCKED | UI-05 浏览器不支持 backdrop-filter：headless 无法禁用该 CSS 能力（CDP `setDisabledFeatures` 不存在；6 组 Chrome flag 均无效）；`prefers-reduced-transparency` 仅作回退分支旁证，不按 UI-05 PASS 计。**2026-10-27 风险接受**：kit 通过 computed 值探测，等价分支已验证回退（html 加 nvui-glass-fallback、面板 97% 近不透明、对比度 13.72/12.47），待有真实不支持环境时补测 |
+| 2026-10-27 | 1.2.2 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | UI-11：页面全量 408 条请求中 ui-kit 的 jsDelivr 请求为 0；阻断 `*.jsdelivr.net` 后新页面面板正常打开（badge v1.2.2、NVUI 2.8.0）；限制：宿主已复用 2.8.0，vendored 分支未触发（如实记录，测试基建覆盖见 tests/browser/） |
 
 > 本批说明：主题与玻璃项按计算样式实测（深色 color rgb(233,236,243) / 浅色 rgb(31,36,48)）；
 > 浅色为 NVUI.setTheme('light') 临时切换，验收后未改 ST 配置；UI-06/07/08 属目视抽查，非逐态穷举。
@@ -214,6 +224,7 @@
 | 2026-10-26 | 1.2.0 | 2.8.0 | ST_Backup_core_20261026_232409__enc-e2e.enc.zip（隔离 harness） | restore-harness | PASS | ENC-03 密文不可读（Magic=STWBDV02，按 zip 解析失败）、ENC-04 正确口令还原、ENC-05 错误口令 500 且不覆盖，均 PASS |
 | 2026-10-26 | 1.2.0 | 2.8.0 | — | — | 未执行 | ENC-01 空口令拦截、ENC-06 v01 历史兼容、ENC-07 v01 错误口令：缺 v01 夹具且未做空口令交互，未执行 |
 | 2026-10-26 | 1.2.1 | 2.8.0 | ST_Backup_core_20260101_000000__v01-fixture.enc.zip（隔离 harness） | restore-harness | PASS | ENC-06/07：夹具由提交 70adf00 的旧版 CryptoHelper 生成（blob hash 与 git 对象一致，非手写密文），Magic=STWBDV01；正确口令还原 200（restoredCount=3，settings/secrets 逐字节一致），错误口令 500 且不写盘、不产生回滚快照 |
+| 2026-10-27 | 1.2.2 | 2.8.0 | —（面板交互，未产生备份） | ui-verifier | PASS | ENC-01：开启加密开关且口令留空后点「立即备份」→ 吐司「请填写备份加密口令」、焦点移到口令框、POST /backup 计数为 0、/backups 未变化、未保存配置；测试后开关恢复关闭 |
 
 > 本批说明：ENC-02 在真实 WebDAV（WsgiDAV）执行；ENC-03/04/05 在隔离 harness（临时 ST 根 +
 > 本地 WebDAV，真实 HTTP）执行；加密口令为一次性测试口令，未写入仓库。
@@ -245,6 +256,7 @@
 | 2026-10-26 | 1.2.0 | 2.8.0 | 缺第二账号 B | — | 未执行 | SH-03 跨账号还原、SH-04 加密共享还原、SH-05 他人撤回 403、SH-06 分享者撤回（缺 B 侧刷新确认）、SH-07 同名 409、SH-08 不受轮转影响 |
 | 2026-10-26 | 1.2.1 | 2.8.0 | alice/bob（隔离 harness，isolate=false，同一远端根） | restore-harness | PASS | SH-01/02/03/05/07/08：分享 COPY 201、双方可见、B 还原写入自己目录且 A 目录不变（含 crossUserNotice）、B 撤回他人 403、同名 409 且原文件与 meta 未变、retention=1 轮转后共享区文件仍在；SH-04 加密共享还原、SH-06 B 侧刷新未单独执行 |
 | 2026-10-27 | 1.2.2 | 2.8.0 | alice/bob（隔离 harness，isolate=false） | restore-harness | PASS | 共享目录归属校验修复回归：非管理员分享他人备份 403（修复前可 200 冒认）、分享本人 200、原主不再被 409 阻塞、管理员豁免 200；`/share` 与 `/delete` 口径一致；A/B 场景 13/13 无回归 |
+| 2026-10-27 | 1.2.2 | 2.8.0 | alice/bob（隔离 harness，加密共享） | restore-harness | PASS | SH-04：加密备份分享 → bob 错口令还原 500（目录/回滚快照均未变、不写盘）；正确口令 200、内容正确、crossUserNotice 正常。SH-06：alice 撤回 200 后共享文件消失，bob 立即与 250ms 后 GET /shared 均为空 |
 
 > 本批说明：真实 WebDAV 上完成「分享 → 撤回」闭环，_shared 条目 2→3→2，未触碰他人分享；
 > 但缺第二账号 B，SH-06 的 B 侧刷新确认未验，故按「未执行」计。
@@ -282,6 +294,9 @@
 | 2026-10-26 | 1.2.0 | 2.8.0 | default-user（隔离 harness 临时 ST 根） | restore-harness | PASS | RB-01 还原前生成 pre_restore_*.zip（返回值与磁盘均命中）、RB-02 快照内 settings.json 为还原前内容（SHA256 校验），均 PASS |
 | 2026-10-26 | 1.2.0 | 2.8.0 | default-user（隔离 harness 临时 ST 根） | restore-harness | 未执行 | RB-03 保留上限：harness 仅执行 3 次还原、共 3 份快照，未做 6 次还原后仅保留 5 份的裁剪验证 |
 | 2026-10-26 | 1.2.0 | 2.8.0 | — | — | 未执行 | SCH-01 定时触发、SCH-02 间隔内不重复、SCH-03 定时备份可还原、ROT-01 超额轮转、ROT-02 隔离目录不误删：均未执行 |
+| 2026-10-27 | 1.2.2 | 2.8.0 | erin（隔离 harness 定时任务） | restore-harness | PASS | SCH-01：lastBackupTime 设为 2h 前 → checkAndRun 触发新增「自动化定时备份」zip（note/manifest/列表一致）；SCH-02：立即二次巡检备份数 1→1、lastBackupTime 未变；SCH-03：该定时备份 restore 200、内容一致 |
+| 2026-10-27 | 1.2.2 | 2.8.0 | rotuser / alice / bob（隔离 harness） | restore-harness | PASS | ROT-01：retention=2 三次备份后仅留最新 2 份、最旧被删；ROT-02：alice 轮转 3→2，bob 目录 2 份不变，共享区文件 sha256 不变且仍可见 |
+| 2026-10-27 | 1.2.2 | 2.8.0 | 隔离 harness 临时 ST 根 | restore-harness | PASS | RB-03：连续 6 次还原的快照数量序列 1→2→3→4→5→5，最终仅保留最新 5 份，最旧被清理；末份快照内容为第 6 次还原前状态 |
 
 > 本批说明：回滚快照在隔离 harness（临时 ST 根 + 本地 WebDAV，真实 HTTP）验证，未跑真实实例还原。
 > RB-03 需连续 6 次还原，本轮仅 3 次，保留上限未触发，按「未执行」计；定时与轮转项无环境，未执行。
