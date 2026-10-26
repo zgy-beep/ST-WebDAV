@@ -143,7 +143,7 @@ node -e "const a=require('./package.json').version,b=require('./manifest.json').
 > `manifest.json` / 服务端 `info.version` 三者一致，并校验前端具备「服务端 → manifest → 字面量」
 > 三级版本来源。改完 `package.json` 后跑 `npm test`，不一致会被直接拦下。
 
-> **内置的 `src/client/vendor/ui-kit/` 副本有独立版本**（当前 v2.5.0），与本项目版本**不要求一致**。两者在 CHANGELOG 中分别记录。
+> **内置的 `src/client/vendor/ui-kit/` 副本有独立版本**（当前 v2.8.0），与本项目版本**不要求一致**。两者在 CHANGELOG 中分别记录。
 
 ---
 

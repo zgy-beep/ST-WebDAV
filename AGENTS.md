@@ -316,7 +316,7 @@ st_webdav_config.json  backups/
 
 - `manifest.json` 的 `version` **必须**与之一致（酒馆 UI 读的是 manifest）—— 由 `tests/version.test.js` 守卫。
 - 前端另有两级兜底（`manifest.json` → 内联字面量），但**不得**成为新的硬编码来源。
-- **改版本号只改 `package.json`**，其余位置由守卫测试强制同步；不要手工逐处改。
+- **版本号只需手工改 `package.json` 与 `manifest.json` 两处**（守卫测试校验二者相等，但**不会自动同步**，漏改即测试失败）；除这两处外，任何地方都不得新增硬编码版本来源。
 
 ---
 
