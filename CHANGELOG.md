@@ -8,6 +8,14 @@
 ## [未发布]
 
 ### 依赖
+- **UI Kit 升级至 v2.8.0**：
+  - 更新内置 `src/client/vendor/ui-kit/` 副本至 `v2.8.0`（上游 additive 小版本：无删除、无改名，三个运行资产逐字节对齐 tag `012653a`）；
+  - 引入运行时自检 `NVUI.selfCheck()` / `NVUI.checkCompatibility()`、`NVUI.defaults` 与 `data-nvui-version` 标记，
+    便于在真实酒馆宿主里排查 kit 版本、玻璃降级状态与 token 缺失；
+  - 新增 `createPanel({ glass })` 三档玻璃模式（`auto` / `force` / `solid`，默认 `auto`）。本项目保持默认 `auto`，
+    不改动既有观感；同时继承 v2.7.1 / v2.7.2 的玻璃修复（面板透明感、宿主禁模糊时近不透明 `.nvui-glass-fallback` 回退、探测三态自愈）与 #15 浏览器回归稳定性修复；
+  - 组件侧新增 `.nvui-actions` 按钮组容器、正文相邻按钮 8px 默认间距与 `--nvui-kit-version` 令牌（组件类 80 → 81，token 110 → 111，仅新增）；
+  - 同步 `NVUI_MIN_VERSION` 最低版本要求为 `2.8.0`，`README.md` / `AGENTS.md` / `style.css` 与前端头注释中的 kit 版本引用一并收敛。
 - **UI Kit 升级至 v2.7.0**：
   - 更新内置 `src/client/vendor/ui-kit/` 副本至 `v2.7.0`；
   - 继承上游宿主表单隔离与 opt-in 表单作用域（`.nvui-form-scope`）、`select optgroup` 主题适配（#12）、焦点陷阱优化（#13）以及宿主模态弹层下的 Esc 让位机制（#14）；

@@ -19,7 +19,7 @@
 | 主分支 | `main` |
 | 发布分支 | 无（仅 `main`，标签直接打在已合并的主干上） |
 | 包管理器 | pnpm（锁文件 `pnpm-lock.yaml`） |
-| 上游组件库 | `zgy-beep/ui-kit`（内置副本：`src/client/vendor/ui-kit/`，当前 v2.7.0） |
+| 上游组件库 | `zgy-beep/ui-kit`（内置副本：`src/client/vendor/ui-kit/`，当前 v2.8.0） |
 | 测试命令 | `npm test`（等价 `pnpm test`） |
 | 检查命令 | `node scripts/validate-commit-msg.mjs`（提交信息校验） |
 
@@ -289,7 +289,7 @@ st_webdav_config.json  backups/
 
 `src/client/index.js` 的 `ensureNVUI()` 实际顺序是：
 
-1. 宿主已加载且版本 ≥ `NVUI_MIN_VERSION`（2.7.0）→ 直接复用；
+1. 宿主已加载且版本 ≥ `NVUI_MIN_VERSION`（2.8.0）→ 直接复用；
 2. **本地 Vendored 优先**（`src/client/vendor/ui-kit/`，零网络、可离线、防注入）；
 3. 本地失败 → 降级到宿主旧版；
 4. 仍不可用 → 仅允许 `cdn.jsdelivr.net` / `fastly.jsdelivr.net` 的 CDN 兜底。
