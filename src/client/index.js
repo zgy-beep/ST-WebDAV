@@ -164,12 +164,37 @@
     return '';
   }
 
+  /**
+   * UI Kit 运行时自检（ui-kit v2.8.0+）
+   * ------------------------------------------------------------------
+   * 多扩展共存 / CDN 降级 / 缓存命中时，kit 的 CSS 与 JS 版本可能不一致，
+   * 这类问题不抛错，只表现为样式静默失效。调用 kit 的 selfCheck 把
+   * 版本、令牌、玻璃回退状态收敛为一条可观测告警；kit 不支持时静默跳过。
+   * `glass-auto-fallback` 是宿主禁用模糊时的预期行为，不算异常，排除。
+   * @param {object} kit
+   */
+  function runKitSelfCheck(kit) {
+    try {
+      if (!kit || typeof kit.selfCheck !== 'function') return;
+      const result = kit.selfCheck({ expect: NVUI_MIN_VERSION });
+      const issues = (Array.isArray(result?.issues) ? result.issues : [])
+        .filter(issue => issue !== 'glass-auto-fallback');
+      if (issues.length > 0) {
+        console.warn('[ST-WebDAV] UI Kit 自检发现问题:', issues.join(', '), result);
+      }
+    } catch (err) {
+      // 自检失败不应阻断面板初始化
+      console.warn('[ST-WebDAV] UI Kit 自检执行失败:', err?.message || err);
+    }
+  }
+
   async function ensureNVUI(cdnBase = DEFAULT_CDN) {
     const hostReady = () => !!(window.NVUI && typeof window.NVUI.createPanel === 'function');
 
     // 宿主已提供且版本达标时直接复用
     if (hostReady() && isVersionAtLeast(window.NVUI.version, NVUI_MIN_VERSION)) {
       NVUI = window.NVUI;
+      runKitSelfCheck(NVUI);
       return NVUI;
     }
     if (hostReady()) {
@@ -192,6 +217,7 @@
 
       if (hostReady() && isVersionAtLeast(window.NVUI.version, NVUI_MIN_VERSION)) {
         NVUI = window.NVUI;
+        runKitSelfCheck(NVUI);
         return NVUI;
       }
     } catch (err) {
@@ -200,6 +226,7 @@
       if (hostReady()) {
         console.warn(`[ST-WebDAV] 降级使用宿主已加载的 UI Kit v${window.NVUI.version}`);
         NVUI = window.NVUI;
+        runKitSelfCheck(NVUI);
         return NVUI;
       }
     }
@@ -218,6 +245,7 @@
     }
 
     NVUI = window.NVUI;
+    runKitSelfCheck(NVUI);
     return NVUI;
   }
 

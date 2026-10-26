@@ -45,3 +45,8 @@ jobs:
       # 测试入口以 package.json 的 test 脚本为准，即 node --test tests/*.test.js。
       - name: 运行测试
         run: npm test
+
+      # 浏览器冒烟：用 runner 自带 Chrome 验证 ui-kit 运行时与 selfCheck；
+      # 未安装 Chrome 时用例自动 skip，不阻塞 CI。
+      - name: 浏览器冒烟（ui-kit 运行时）
+        run: npm run test:browser
