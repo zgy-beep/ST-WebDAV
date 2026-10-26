@@ -1,6 +1,6 @@
 {
   "name": "st-webdav",
-  "version": "1.2.2",
+  "version": "1.3.0",
   "description": "SillyTavern WebDAV 全量备份与还原插件 (支持核心配置与全量数据流式同步、端到端加密、自动历史轮转)",
   "main": "index.js",
   "type": "module",

@@ -7,6 +7,23 @@
 
 ## [未发布]
 
+## [1.3.0] - 2026-10-27
+
+### 新增
+- **UI Kit 运行时自检**：面板加载内置 kit 后调用 `NVUI.selfCheck({ expect })`，版本/令牌/玻璃状态
+  异常时输出一条 `[ST-WebDAV]` 告警（预期的玻璃回退不告警）；kit 不支持时静默跳过，不阻断初始化
+
+### 内部
+- 新增浏览器冒烟测试 `tests/browser/`：零依赖 CDP 驱动系统 Chrome，覆盖 ui-kit 运行时与 selfCheck
+  正常/缺 CSS 两条路径；`npm run test:browser`，CI 在单元测试后自动执行（无浏览器时自动 skip）
+- 实机验收补齐 v1.3.0 收口项：定时备份（SCH-01~03）、历史轮转（ROT-01/02）、回滚快照上限（RB-03）、
+  加密共享还原与撤回刷新（SH-04/06）、空口令拦截（ENC-01）、本地优先/CDN 阻断（UI-11）
+- WebDAV 协议矩阵：用 WsgiDAV / rclone / dufs / webdav-server 四套真实实现跑通 DAV-01~06（28/28），
+  记录 COPY 状态码、PROPFIND href、LOCK token 等实现差异；坚果云 / Alist / 群晖 / Nextcloud /
+  InfiniCLOUD 因无测试账号记 BLOCKED
+- HOST-10 移动端安全区、UI-05 不支持 backdrop-filter 记「风险接受」并留存依据
+  （headless 环境无法模拟；等价回退分支已用 reduced-transparency 验证）
+
 ## [1.2.2] - 2026-10-27
 
 ### 安全
