@@ -4,6 +4,15 @@
 
 **命名**：`NNN-<简短标题>.md`，序号连续递增。
 
+## ADR 索引
+
+| 编号 | 标题 | 状态 | 日期 |
+| :--- | :--- | :--- | :--- |
+| [ADR-001](ADR-001-encryption-format-v02.md) | 加密备份采用密文格式 v02 | 已接受 | 2026-10-26 |
+| [ADR-002](ADR-002-shared-area-permissions.md) | 共享区「分享者本人或管理员」权限模型 | 已接受 | 2026-10-26 |
+| [ADR-003](ADR-003-ui-kit-vendored-assets.md) | ui-kit 内置副本只 vendor 3 个运行时资产 | 已接受 | 2026-10-26 |
+| [ADR-004](ADR-004-ui-kit-v280-adoption.md) | 暂不接入 v2.8.0 玻璃 force 与运行时自检 | 已接受 | 2026-10-26 |
+
 **模板：**
 
 ```markdown

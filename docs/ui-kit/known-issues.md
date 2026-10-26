@@ -63,3 +63,29 @@
 // 临时绕过：ui-kit#<编号> —— <一句话描述>
 // 移除条件：ui-kit 修复并升级到 >= <版本> 后删除本文件
 ```
+
+---
+
+## 巡检记录
+
+> 定期核对内置 ui-kit 副本与上游状态。巡检本身**不新增问题行**——只有确实向上游提交过
+> issue 的缺陷才进入「问题列表」。
+
+| 巡检日期 | 内置版本 | 结论 | 下次巡检触发条件 |
+| :--- | :--- | :--- | :--- |
+| 2026-10-26 | v2.8.0 | 无待跟踪的上游缺陷 | 升级内置副本、上游发新版或发现新缺陷时 |
+
+**2026-10-26 巡检详情：**
+
+- 内置副本版本 v2.8.0：`src/client/vendor/ui-kit/nvui-api.js:55` 的 `VERSION` 为
+  `2.8.0`，`tokens.css:4` / `components.css:4` 版本注释一致，由
+  `tests/version.test.js:130-143` 守卫。
+- 内置 3 个资产与上游 `zgy-beep/ui-kit` 的 v2.8.0 检出逐字节一致（SHA256 比对
+  通过）；上游 v2.8.0 的 4 资产（含 `tokens.json`）与 `downstream-check.js`
+  不适用于本仓库，取舍见 `docs/decisions/ADR-003-ui-kit-vendored-assets.md`。
+- v2.8.0 新增的玻璃 force 模式与运行时 `selfCheck` 未接入，边界见
+  `docs/decisions/ADR-004-ui-kit-v280-adoption.md`。
+- 结论：「问题列表」与「临时隔离层清单」保持暂无；本次巡检未发现需要向上游提交的
+  缺陷，也未新增任何上游 issue 编号或链接。
+- 下次巡检触发条件：升级 `src/client/vendor/ui-kit/`、上游发布新版本、本项目发现疑似
+  组件缺陷，或评估接入上述 v2.8.0 能力之前。
