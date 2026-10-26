@@ -116,6 +116,7 @@ fix(runtime): 修复设置重载后 context 失效
 docs(engineering): 补充 ui-kit issue 上报规范
 chore(ui-kit): 升级内置 ui-kit 至 v2.5.0
 test(parser): 补齐空输入边界用例
+chore(release): 发布 v1.2.0
 ```
 
 ### 2.4 示例

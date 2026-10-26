@@ -225,7 +225,8 @@ ST-WebDAV/
 - **提交信息格式**：见 `docs/engineering/git-workflow.md`（Conventional Commits）。
   - 首行 `<类型>(<范围>): <主题>`，主题用中文，不加句号。
   - **允许的 scope**（与 `scripts/validate-commit-msg.mjs` 的 `SCOPES` 集合保持同步）：
-    `client` `server` `editor` `runtime` `api` `ui` `settings` `test` `docs` `engineering` `ui-kit` `build` `deps`
+    `client` `server` `editor` `runtime` `api` `ui` `settings` `test` `docs`
+    `engineering` `ui-kit` `build` `deps` `release`
   - **新增 scope 必须同时改脚本**，否则提交会被 hook 拦下。
 - **不提交**：`.env`、密钥、本地配置、`node_modules/`、构建产物、临时文件。
 - **推送是外部动作**：除非用户明确指示，否则**只提交不推送**。

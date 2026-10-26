@@ -26,7 +26,7 @@ const HEADER_RE = new RegExp(
 // 允许的 scope：项目可在此扩展
 const SCOPES = new Set([
   'client', 'server', 'editor', 'runtime', 'api', 'ui', 'settings', 'test', 'docs',
-  'engineering', 'ui-kit', 'build', 'deps',
+  'engineering', 'ui-kit', 'build', 'deps', 'release',
 ]);
 
 const MAX_HEADER = 72;
