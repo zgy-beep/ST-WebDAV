@@ -4,8 +4,12 @@
 > 本文件定义验收项、操作步骤与预期结果；各节「执行记录」只记录已真实执行的部分，**不代表全量通过**。
 > 每次发版的真实结果填入各节「执行记录」表，并随 release PR / release issue 留档。
 >
-> **批次说明（2026-10-26）**：对 v1.2.0（ui-kit 2.8.0）执行了真实宿主 / 真实 WebDAV / 隔离 harness
+> **批次说明（2026-10-26 v1.2.0）**：对 v1.2.0（ui-kit 2.8.0）执行了真实宿主 / 真实 WebDAV / 隔离 harness
 > 三类验证，**不构成全量通过**；缺口见各节「执行记录」中标记「未执行」的项。
+>
+> **批次说明（2026-10-26 v1.2.1 回归）**：修复 v1.2.0 遗留的「自定义分类 scope 归一化」与「并发冲突 409」
+> 后，在真实 ST v1.2.1 + 真实 WebDAV 上复验两项修复，并补测 HOST-04/05/06/07/11 与 UI-04；
+> 其余「未执行」项（6 家服务端矩阵、v01 兼容、定时/轮转、多账号共享等）状态不变。
 
 - 适用对象：ST-WebDAV 发版前的实机验收，即自动化测试覆盖不到的部分。
 - 关联流程：[`versioning.md`](versioning.md) §8 第 ④ 步「全量验证」。
@@ -105,6 +109,7 @@
 | 2026-10-26 | DAV-C04 Nextcloud / ownCloud | 1.2.0 | 2.8.0 | — | 未执行 | 无测试账号，DAV-01～06 未执行 |
 | 2026-10-26 | DAV-C05 InfiniCLOUD | 1.2.0 | 2.8.0 | — | 未执行 | 无测试账号，DAV-01～06 未执行 |
 | 2026-10-26 | DAV-C06 自建 WebDAV | 1.2.0 | 2.8.0 | webdav-e2e / restore-harness | PASS | 自建 WsgiDAV 4.3.5（Python 3.11.16 / Cheroot 11.1.2）：DAV-01 连接 207、DAV-02 核心/自定义/加密备份、DAV-03 列表、DAV-05 删除、DAV-06 日志与凭据检查均 PASS；DAV-04 真实实例还原未执行（隔离 harness 等价验证） |
+| 2026-10-26 | DAV-C06 自建 WebDAV（v1.2.1 修复回归） | 1.2.1 | 2.8.0 | webdav-e2e | PASS | 仅传 categories 未传 scope 的备份现为 custom（203,601 B，元数据与实际内容一致；v1.2.0 曾回落 core 2.86 MB）；并发备份第二次返回 409（v1.2.0 为 500）；测试文件已清理，远端回到基线 |
 
 > 本批说明：仅在自建 WsgiDAV 4.3.5 上实测（对应 DAV-C06）；坚果云 / Alist / 群晖 / Nextcloud /
 > InfiniCLOUD 无测试账号，统一记「未执行」，不得按 PASS 计。
@@ -136,6 +141,7 @@
 |---|---|---|---|---|---|---|
 | 2026-10-26 | 1.2.0 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | HOST-01 打开、HOST-02 三标签、HOST-03 关闭按钮、HOST-09 移动端抽屉、HOST-11 重复开关（含关闭后恢复）PASS；桌面 1280×800、移动 390×844 |
 | 2026-10-26 | 1.2.0 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | 未执行 | HOST-04 Esc、HOST-05 遮罩、HOST-06 焦点归还、HOST-07 焦点陷阱、HOST-08 刷新、HOST-10 安全区未执行；Esc / 焦点两项下轮复验补测 |
+| 2026-10-26 | 1.2.1 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | v1.2.1 补测：HOST-04 Esc（多浮层时只关栈顶、不误关宿主模态）、HOST-05 遮罩（点内部不关）、HOST-06 焦点归还到 #extensionsMenuButton、HOST-07 焦点陷阱（Tab×14 / Shift+Tab×10 零逃逸）、HOST-11 连续开关 3 轮无残留；HOST-08 刷新、HOST-10 安全区仍未执行 |
 
 > 本批说明：真实宿主 SillyTavern 1.19.0（Windows）+ 系统 Chrome headless，只读交互（打开 / 切页 /
 > 关闭），未触发备份、还原、删除等写操作；pageerror=0，console 无插件相关报错。
@@ -168,6 +174,7 @@
 | 2026-10-26 | 1.2.0 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | UI-01 深色、UI-02 浅色（NVUI.setTheme('light') 临时切换，未持久化 ST 配置）、UI-03 玻璃正常态（panel backdrop-filter blur(48px) saturate(1.9)，根节点无 nvui-glass-fallback）PASS |
 | 2026-10-26 | 1.2.0 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | UI-06/07/08 部分覆盖：仅目视检查面板实际渲染的按钮 / 表单 / 徽章，未逐态穷举 hover / 禁用 / focus-visible |
 | 2026-10-26 | 1.2.0 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | 未执行 | UI-04 body.no-blur 回退、UI-05 浏览器不支持 backdrop-filter、UI-09 进度条推进、UI-10 吐司与内联确认、UI-11 阻断 jsdelivr 验本地优先，均未执行 |
+| 2026-10-26 | 1.2.1 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | v1.2.1 补测 UI-04：body.no-blur 后 `<html>` 加 .nvui-glass-fallback、面板 97% 近不透明且 backdrop-filter=none、文字对比度 13.72/12.47；移除后玻璃恢复 blur(48px)；UI-05/09/10/11 仍未执行 |
 
 > 本批说明：主题与玻璃项按计算样式实测（深色 color rgb(233,236,243) / 浅色 rgb(31,36,48)）；
 > 浅色为 NVUI.setTheme('light') 临时切换，验收后未改 ST 配置；UI-06/07/08 属目视抽查，非逐态穷举。
