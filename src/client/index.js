@@ -28,7 +28,7 @@
    * 早期版本这里直接硬编码 'v1.0.0'，导致升级到 v1.1.0 时面板标题旁的
    * 版本徽章仍显示旧版本号（版本号漂移）。
    */
-  const PLUGIN_VERSION_FALLBACK = '1.1.0';
+  const PLUGIN_VERSION_FALLBACK = '1.2.0';
   let PLUGIN_VERSION = PLUGIN_VERSION_FALLBACK;
 
   /**

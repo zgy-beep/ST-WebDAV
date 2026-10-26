@@ -7,6 +7,8 @@
 
 ## [未发布]
 
+## [1.2.0] - 2026-10-26
+
 ### 依赖
 - **UI Kit 升级至 v2.8.0**：
   - 更新内置 `src/client/vendor/ui-kit/` 副本至 `v2.8.0`（上游 additive 小版本：无删除、无改名，三个运行资产逐字节对齐 tag `012653a`）；
@@ -23,6 +25,15 @@
   - 同步 `NVUI_MIN_VERSION` 最低版本要求为 `2.7.0`，并在 `tests/version.test.js` 中补齐文档与准则版本守卫。
 
 ### 内部
+- 新增 `.github/` 协作设施：PR 描述模板、ui-kit bug / feature issue 模板，以及 push / PR 到 `main`
+  自动运行 `npm test` 的 CI 工作流（Node 22 + pnpm 锁文件，红灯不得合并）
+- 新增发版实机验收清单 `docs/engineering/manual-qa.md`：覆盖 6 家 WebDAV 服务端、宿主面板、
+  UI Kit 视觉、加密还原、共享区、回滚与轮转；README 的兼容性声明改为引用该清单
+- 补齐 ADR-001～004（v02 加密格式、共享区权限模型、ui-kit 3 资产内置策略、v2.8.0 能力采纳边界），
+  并在 `docs/ui-kit/known-issues.md` 增加巡检记录
+- 修正文档漂移：AGENTS §7.1 版本号同步口径、ui-kit 版本引用（v2.5.0 → v2.8.0）、
+  CODE_REVIEW 的历史快照与测试基线说明
+- 提交信息校验脚本补充 `release` scope，与 `versioning.md` §8 的 `chore(release)` 发版提交对齐
 - 版本号收敛为单一事实来源（`package.json`），由 `tests/version.test.js` 守卫，
   修复升级后前端徽章仍显示旧版本号的漂移问题
 - `AGENTS.md` 与 `docs/engineering/` 全套规范完成项目实例化：占位符全部替换为真实值，
