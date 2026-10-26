@@ -8,7 +8,7 @@ import { SchedulerService } from './src/server/SchedulerService.js';
 import { SharedService } from './src/server/SharedService.js';
 import { BACKUP_CATEGORIES } from './src/server/BackupCategories.js';
 import { getUserInfo, resolveRemoteDirectory, resolveSharedDirectory, isAdminUser } from './src/server/UserHelper.js';
-import { sanitizeBackupFileName } from './src/server/PathGuard.js';
+import { sanitizeBackupFileName, isBackupOwnedBy } from './src/server/PathGuard.js';
 import { JobLock } from './src/server/JobLock.js';
 import { getPluginVersion } from './src/server/Version.js';
 import { isJobBusyError, HTTP_CONFLICT } from './src/server/JobBusyError.js';
@@ -400,7 +400,7 @@ function registerRoutes(router) {
       if (!isolate) {
         const handle = getUserInfo(req.user).handle || 'default-user';
         const isAdmin = isAdminUser(req.user);
-        if (!isAdmin && !safeName.startsWith(`ST_Backup_${handle}_`)) {
+        if (!isAdmin && !isBackupOwnedBy(safeName, handle)) {
           return res.status(403).json({ error: '权限不足：共享目录下只能删除属于本人的备份' });
         }
       }
@@ -433,6 +433,16 @@ function registerRoutes(router) {
       const isolate = cfg.get('isolateUserDirectory') !== false;
       const remoteDir = resolveRemoteDirectory(cfg.get('remoteDirectory') || 'SillyTavern_Backups', req.user, isolate);
       const sharedDir = resolveSharedDirectory(cfg.get('remoteDirectory') || 'SillyTavern_Backups');
+
+      // 共享目录模式（未开启用户隔离）下，目录内混有各用户的备份。
+      // 与 /delete 保持一致：非管理员只能分享属于本人前缀的备份，
+      // 否则可冒认归属（把他人备份记成自己分享），并反向阻塞原主分享（409）。
+      if (!isolate) {
+        const handle = getUserInfo(req.user).handle || 'default-user';
+        if (!isAdminUser(req.user) && !isBackupOwnedBy(safeName, handle)) {
+          return res.status(403).json({ error: '权限不足：共享目录下只能分享属于本人的备份' });
+        }
+      }
 
       // 取用户目录下的元数据条目，用于补全备注/范围/分类
       const metaMap = await backupService.getRemoteMeta(remoteDir, userClient).catch(() => ({}));

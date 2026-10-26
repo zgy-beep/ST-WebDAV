@@ -77,3 +77,21 @@ export function isBackupFileName(name) {
   const lower = name.toLowerCase();
   return name.startsWith(BACKUP_FILE_PREFIX) && ALLOWED_SUFFIXES.some(suffix => lower.endsWith(suffix));
 }
+
+/**
+ * 判断备份文件是否归属于指定用户句柄
+ * ------------------------------------------------------------------
+ * 共享目录模式（未开启用户隔离）下，同一远端目录混有各账号的备份，
+ * 文件名以 `ST_Backup_<handle>_` 作为归属标记（由 BackupService 写入）。
+ * 与 `/delete` 一致：非管理员只能操作自己前缀的文件，避免冒认他人备份。
+ * @param {unknown} fileName
+ * @param {unknown} handle
+ * @returns {boolean}
+ */
+export function isBackupOwnedBy(fileName, handle) {
+  if (typeof fileName !== 'string' || typeof handle !== 'string') return false;
+  const normalizedHandle = handle.trim();
+  if (!normalizedHandle) return false;
+  // 前缀含尾部下划线，避免 handle "a" 误匹配 "ST_Backup_ab_..."
+  return fileName.startsWith(`${BACKUP_FILE_PREFIX}${normalizedHandle}_`);
+}
