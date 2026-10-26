@@ -24,7 +24,8 @@ src/
 - 依赖单向：`index.js` → 服务端模块 → `Constants.js`，禁止反向与循环。
 - 服务端模块之间**禁止互相 import**：`BackupService` 与 `RestoreService` 共享的常量
   一律放 `Constants.js`（该文件的存在目的就是打断这个环）。
-- 前端**不得**触碰文件系统或直连 WebDAV，只能经 `/api/plugins/st-webdav/*` 路由。
+- 前端**不得**触碰文件系统或直连 WebDAV，只能经 `/api/plugins/st-webdav/*` 路由；
+  接口行为约定（状态码、scope 解析、并发语义）见 [`server/README.md`](server/README.md)。
 - 禁止出现 `utils.js` / `helpers.js` 这类无归属杂物袋。
 - 前端样式类名与 CSS 变量必须带项目前缀（`.st-webdav-` / `--st-webdav-`）；
   ui-kit 自身的 `nvui-` 前缀不得占用。
@@ -32,7 +33,7 @@ src/
 ## ui-kit 副本
 
 `src/client/vendor/ui-kit/` 是上游 [`zgy-beep/ui-kit`](https://github.com/zgy-beep/ui-kit)
-的内置副本（当前 v2.5.0），**只读**。
+的内置副本（当前 v2.8.0），**只读**。
 
 - 禁止修改其中任何文件；发现缺陷走上游 issue 流程（`docs/ui-kit/issue-reporting.md`）。
 - 禁止用 `!important` / 内联样式 / 覆写类名的方式在业务侧给 kit 打补丁。

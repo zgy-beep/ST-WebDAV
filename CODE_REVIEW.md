@@ -105,7 +105,7 @@
 | M2 | 共享目录下 `/delete` 可删任意文件 | `index.js` | 非隔离模式校验文件归属前缀（管理员除外） |
 | M3 | 共享区任意用户可删除他人文件 | `SharedService.unshare` | 无索引记录时一律拒绝（403）；此前整个权限校验被跳过 |
 | M4 | meta 读-改-写并发丢更新 | `BackupService` / `SharedService` | per-remoteDir 异步互斥锁；共享区写操作**强制绕过 30s 缓存**读远端最新值 |
-| M5 | 共享目录模式下用户 A 可分享 B 的文件 | `SharedService.share` | 源文件必须存在于调用者自己生效的远端目录 |
+| M5 | 共享目录模式下用户 A 可分享 B 的文件 | `SharedService.share` / `index.js` | 源文件必须存在于调用者自己生效的远端目录；**v1.2.2 补强**：非隔离模式下非管理员只能分享本人 handle 前缀的文件（与 `/delete` 同一归属校验） |
 | M6 | 备份与还原对同一用户无互斥 | `BackupService` / `RestoreService` | 新增 `JobLock`，per-handle 跨类型互斥 |
 | M7 | Scheduler 使用全局单例 client 原地改凭据 | `SchedulerService` | 每用户构造独立 `WebDavClient` |
 | M8 | `resolveUserDir` fail-open 跨用户数据泄露 | `UserHelper` | 用户目录不存在时返回**该用户自己的**路径，绝不回退到 `default-user` |
