@@ -11,6 +11,7 @@ import { getUserInfo, resolveRemoteDirectory, resolveSharedDirectory, isAdminUse
 import { sanitizeBackupFileName } from './src/server/PathGuard.js';
 import { JobLock } from './src/server/JobLock.js';
 import { getPluginVersion } from './src/server/Version.js';
+import { isJobBusyError, HTTP_CONFLICT } from './src/server/JobBusyError.js';
 
 export const info = {
   id: 'st-webdav',
@@ -38,6 +39,15 @@ function getClientForUser(cfg) {
     password: cfg.get('webdavPassword'),
     timeoutMs: cfg.get('timeoutMs') || 15000,
   });
+}
+
+/**
+ * 任务互斥冲突返回 409（客户端可稍后重试），其余错误仍为 500
+ * @param {import('express').Response} res
+ * @param {Error} err
+ */
+function sendJobError(res, err) {
+  res.status(isJobBusyError(err) ? HTTP_CONFLICT : 500).json({ error: err.message });
 }
 
 /**
@@ -228,7 +238,7 @@ function registerRoutes(router) {
       });
       res.json(result);
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      sendJobError(res, err);
     }
   });
 
@@ -348,7 +358,7 @@ function registerRoutes(router) {
 
       res.json(result);
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      sendJobError(res, err);
     }
   });
 

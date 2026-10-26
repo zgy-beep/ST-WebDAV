@@ -6,6 +6,7 @@ import { CryptoHelper } from './CryptoHelper.js';
 import { BACKUP_CATEGORIES } from './BackupCategories.js';
 import { resolveUserDir, getUserInfo, resolveRemoteDirectory } from './UserHelper.js';
 import { JobLock } from './JobLock.js';
+import { JobBusyError } from './JobBusyError.js';
 import { LOCAL_CONFIG_FILE, REMOTE_META_FILE } from './Constants.js';
 import { getPluginVersion } from './Version.js';
 
@@ -84,7 +85,7 @@ export class BackupService {
     const handle = userInfo.handle || 'default-user';
 
     if (this.activeBackups.has(handle)) {
-      throw new Error('另一个备份任务正在进行中，请勿重复触发');
+      throw new JobBusyError('另一个备份任务正在进行中，请勿重复触发');
     }
 
     const cfg = options.configManager || this.configManager;
@@ -117,19 +118,24 @@ export class BackupService {
         timeoutMs: cfg.get('timeoutMs') || 15000,
       });
 
-      const scope = options.scope || cfg.get('backupScope') || 'core';
       const encrypt = options.encrypt !== undefined ? Boolean(options.encrypt) : Boolean(cfg.get('encryptionEnabled'));
       const password = options.password || cfg.get('encryptionPassword') || '';
       const note = options.note || '';
-
-      if (encrypt && !password) {
-        throw new Error('已勾选端到端加密，但未提供加密密码');
-      }
 
       // 纵深防御：categories 必须来自服务端白名单，防止恶意类别名进入远端 meta
       const validCategoryIds = new Set(BACKUP_CATEGORIES.map(c => c.id));
       const requestedCategories = Array.isArray(options.categories) ? options.categories : [];
       const categories = requestedCategories.filter(id => validCategoryIds.has(id));
+
+      // 只传 categories 而未传 scope 时按「自定义分类」处理：
+      // 若回落到配置的 scope（如 core），会把 core 全集打进包、却把 categories 记进
+      // manifest 与远端 meta，造成元数据与实际内容不一致（实机验收发现）。
+      const scope = options.scope
+        || (categories.length > 0 ? 'custom' : (cfg.get('backupScope') || 'core'));
+
+      if (encrypt && !password) {
+        throw new Error('已勾选端到端加密，但未提供加密密码');
+      }
 
       const userDir = userInfo.userDir;
       const isolate = cfg.get('isolateUserDirectory') !== false;

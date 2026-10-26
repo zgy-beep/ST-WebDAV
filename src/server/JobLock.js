@@ -7,6 +7,8 @@
  *      per-handle 互斥锁。
  */
 
+import { JobBusyError } from './JobBusyError.js';
+
 /**
  * @typedef {'backup' | 'restore'} JobType
  */
@@ -27,9 +29,9 @@ export class JobLock {
 
     if (existing) {
       if (existing.type !== type) {
-        throw new Error('该用户有正在进行的备份/还原任务，请等待其完成后重试');
+        throw new JobBusyError('该用户有正在进行的备份/还原任务，请等待其完成后重试');
       }
-      throw new Error(type === 'backup'
+      throw new JobBusyError(type === 'backup'
         ? '另一个备份任务正在进行中，请勿重复触发'
         : '另一个恢复任务正在进行中，请稍候');
     }

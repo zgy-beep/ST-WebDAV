@@ -8,6 +8,7 @@ import archiver from 'archiver';
 import { CryptoHelper } from './CryptoHelper.js';
 import { resolveUserDir, getUserInfo, resolveRemoteDirectory } from './UserHelper.js';
 import { JobLock } from './JobLock.js';
+import { JobBusyError } from './JobBusyError.js';
 import { sanitizeBackupFileName } from './PathGuard.js';
 import { LOCAL_CONFIG_FILE } from './Constants.js';
 
@@ -183,7 +184,7 @@ export class RestoreService {
     const handle = userInfo.handle || 'default-user';
 
     if (this.activeRestores.has(handle)) {
-      throw new Error('另一个恢复任务正在进行中，请稍候');
+      throw new JobBusyError('另一个恢复任务正在进行中，请稍候');
     }
 
     const cfg = options.configManager || this.configManager;
