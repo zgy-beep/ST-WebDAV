@@ -1,8 +1,11 @@
 # 发版实机验收清单（Manual QA）
 
-> **状态：待执行模板**（建立于 2026-10-26）。
-> 本文件只定义验收项、操作步骤与预期结果，**不记录也不代表任何版本已通过验收**。
+> **状态：待执行模板 + 2026-10-26 首批执行记录**（建立于 2026-10-26）。
+> 本文件定义验收项、操作步骤与预期结果；各节「执行记录」只记录已真实执行的部分，**不代表全量通过**。
 > 每次发版的真实结果填入各节「执行记录」表，并随 release PR / release issue 留档。
+>
+> **批次说明（2026-10-26）**：对 v1.2.0（ui-kit 2.8.0）执行了真实宿主 / 真实 WebDAV / 隔离 harness
+> 三类验证，**不构成全量通过**；缺口见各节「执行记录」中标记「未执行」的项。
 
 - 适用对象：ST-WebDAV 发版前的实机验收，即自动化测试覆盖不到的部分。
 - 关联流程：[`versioning.md`](versioning.md) §8 第 ④ 步「全量验证」。
@@ -82,25 +85,30 @@
 
 | 编号 | 服务端 | 前置 / 认证要点 | 记录 |
 |---|---|---|---|
-| DAV-C01 | 坚果云（Jianguoyun） | 使用「应用密码」而非登录密码；根 URL 形如 `https://dav.jianguoyun.com/dav/` | ☐ |
-| DAV-C02 | Alist（挂载阿里云盘 / 百度网盘 / 115 / 夸克等） | Alist 已开启 WebDAV 且有写权限；挂载盘允许上传大文件 | ☐ |
-| DAV-C03 | 群晖 NAS（Synology WebDAV Server） | WebDAV Server 套件已启动；账号对目标共享文件夹有读写权限 | ☐ |
-| DAV-C04 | Nextcloud / ownCloud | 使用应用密码；URL 指向 `/remote.php/dav/files/<用户>/` | ☐ |
-| DAV-C05 | InfiniCLOUD（原 TeraCLOUD） | 使用应用密码；确认根路径与配额允许本次测试体积 | ☐ |
-| DAV-C06 | 自建 Nginx / Apache / Caddy | 已启用 `PUT`/`GET`/`DELETE`/`MKCOL`；反代透传 `Authorization` | ☐ |
+| DAV-C01 | 坚果云（Jianguoyun） | 使用「应用密码」而非登录密码；根 URL 形如 `https://dav.jianguoyun.com/dav/` | 未执行 |
+| DAV-C02 | Alist（挂载阿里云盘 / 百度网盘 / 115 / 夸克等） | Alist 已开启 WebDAV 且有写权限；挂载盘允许上传大文件 | 未执行 |
+| DAV-C03 | 群晖 NAS（Synology WebDAV Server） | WebDAV Server 套件已启动；账号对目标共享文件夹有读写权限 | 未执行 |
+| DAV-C04 | Nextcloud / ownCloud | 使用应用密码；URL 指向 `/remote.php/dav/files/<用户>/` | 未执行 |
+| DAV-C05 | InfiniCLOUD（原 TeraCLOUD） | 使用应用密码；确认根路径与配额允许本次测试体积 | 未执行 |
+| DAV-C06 | 自建 Nginx / Apache / Caddy | 已启用 `PUT`/`GET`/`DELETE`/`MKCOL`；反代透传 `Authorization` | PASS（部分项） |
 
-> 「记录」列只填执行状态（`PASS` / `FAIL` / `BLOCKED`）；详细字段填 §3.3。
+> 「记录」列只填执行状态（`PASS` / `FAIL` / `BLOCKED` / `未执行`）；`PASS（部分项）` 表示仅覆盖部分
+> DAV 项。详细字段填 §3.3。
 
 ### 3.3 执行记录
 
 | 日期 | 服务端 | 插件版本 | ui-kit 版本 | 执行人 | 结果 | 备注 |
 |---|---|---|---|---|---|---|
-| | DAV-C01 坚果云 | | | | | |
-| | DAV-C02 Alist | | | | | |
-| | DAV-C03 群晖 NAS | | | | | |
-| | DAV-C04 Nextcloud / ownCloud | | | | | |
-| | DAV-C05 InfiniCLOUD | | | | | |
-| | DAV-C06 自建 WebDAV | | | | | |
+| 2026-10-26 | DAV-C01 坚果云 | 1.2.0 | 2.8.0 | — | 未执行 | 无测试账号，DAV-01～06 未执行 |
+| 2026-10-26 | DAV-C02 Alist | 1.2.0 | 2.8.0 | — | 未执行 | 无测试账号，DAV-01～06 未执行 |
+| 2026-10-26 | DAV-C03 群晖 NAS | 1.2.0 | 2.8.0 | — | 未执行 | 无测试账号，DAV-01～06 未执行 |
+| 2026-10-26 | DAV-C04 Nextcloud / ownCloud | 1.2.0 | 2.8.0 | — | 未执行 | 无测试账号，DAV-01～06 未执行 |
+| 2026-10-26 | DAV-C05 InfiniCLOUD | 1.2.0 | 2.8.0 | — | 未执行 | 无测试账号，DAV-01～06 未执行 |
+| 2026-10-26 | DAV-C06 自建 WebDAV | 1.2.0 | 2.8.0 | webdav-e2e / restore-harness | PASS | 自建 WsgiDAV 4.3.5（Python 3.11.16 / Cheroot 11.1.2）：DAV-01 连接 207、DAV-02 核心/自定义/加密备份、DAV-03 列表、DAV-05 删除、DAV-06 日志与凭据检查均 PASS；DAV-04 真实实例还原未执行（隔离 harness 等价验证） |
+
+> 本批说明：仅在自建 WsgiDAV 4.3.5 上实测（对应 DAV-C06）；坚果云 / Alist / 群晖 / Nextcloud /
+> InfiniCLOUD 无测试账号，统一记「未执行」，不得按 PASS 计。
+> DAV-04 真实实例还原未执行（避免覆盖真实数据），改由隔离 harness 做等价还原验证。
 
 ---
 
@@ -126,7 +134,12 @@
 
 | 日期 | 插件版本 | ui-kit 版本 | 宿主 / 浏览器 | 执行人 | 结果 | 备注 |
 |---|---|---|---|---|---|---|
-| （执行后填写） | | | | | | |
+| 2026-10-26 | 1.2.0 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | HOST-01 打开、HOST-02 三标签、HOST-03 关闭按钮、HOST-09 移动端抽屉、HOST-11 重复开关（含关闭后恢复）PASS；桌面 1280×800、移动 390×844 |
+| 2026-10-26 | 1.2.0 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | 未执行 | HOST-04 Esc、HOST-05 遮罩、HOST-06 焦点归还、HOST-07 焦点陷阱、HOST-08 刷新、HOST-10 安全区未执行；Esc / 焦点两项下轮复验补测 |
+
+> 本批说明：真实宿主 SillyTavern 1.19.0（Windows）+ 系统 Chrome headless，只读交互（打开 / 切页 /
+> 关闭），未触发备份、还原、删除等写操作；pageerror=0，console 无插件相关报错。
+> 截图 6 张（深色 / 浅色 / 移动端 / 关闭态）留档于 `.workbuddy/e2e-2026-10-26/`（本地，未入库）。
 
 ---
 
@@ -152,7 +165,12 @@
 
 | 日期 | 插件版本 | ui-kit 版本 | 宿主 / 浏览器 | 执行人 | 结果 | 备注 |
 |---|---|---|---|---|---|---|
-| （执行后填写） | | | | | | |
+| 2026-10-26 | 1.2.0 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | UI-01 深色、UI-02 浅色（NVUI.setTheme('light') 临时切换，未持久化 ST 配置）、UI-03 玻璃正常态（panel backdrop-filter blur(48px) saturate(1.9)，根节点无 nvui-glass-fallback）PASS |
+| 2026-10-26 | 1.2.0 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | UI-06/07/08 部分覆盖：仅目视检查面板实际渲染的按钮 / 表单 / 徽章，未逐态穷举 hover / 禁用 / focus-visible |
+| 2026-10-26 | 1.2.0 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | 未执行 | UI-04 body.no-blur 回退、UI-05 浏览器不支持 backdrop-filter、UI-09 进度条推进、UI-10 吐司与内联确认、UI-11 阻断 jsdelivr 验本地优先，均未执行 |
+
+> 本批说明：主题与玻璃项按计算样式实测（深色 color rgb(233,236,243) / 浅色 rgb(31,36,48)）；
+> 浅色为 NVUI.setTheme('light') 临时切换，验收后未改 ST 配置；UI-06/07/08 属目视抽查，非逐态穷举。
 
 ---
 
@@ -177,7 +195,13 @@
 
 | 日期 | 插件版本 | ui-kit 版本 | 备份文件 | 执行人 | 结果 | 备注 |
 |---|---|---|---|---|---|---|
-| （执行后填写） | | | | | | |
+| 2026-10-26 | 1.2.0 | 2.8.0 | ST_Backup_core_20261026_232206__E2E-加密-20261026-232206.enc.zip（真实 WebDAV） | webdav-e2e | PASS | ENC-02 加密上传：远端出现 .enc.zip，接口返回 encrypted=true；历史卡片「加密」徽章未单独截图取证 |
+| 2026-10-26 | 1.2.0 | 2.8.0 | ST_Backup_core_20261026_232409__enc-e2e.enc.zip（隔离 harness） | restore-harness | PASS | ENC-03 密文不可读（Magic=STWBDV02，按 zip 解析失败）、ENC-04 正确口令还原、ENC-05 错误口令 500 且不覆盖，均 PASS |
+| 2026-10-26 | 1.2.0 | 2.8.0 | — | — | 未执行 | ENC-01 空口令拦截、ENC-06 v01 历史兼容、ENC-07 v01 错误口令：缺 v01 夹具且未做空口令交互，未执行 |
+
+> 本批说明：ENC-02 在真实 WebDAV（WsgiDAV）执行；ENC-03/04/05 在隔离 harness（临时 ST 根 +
+> 本地 WebDAV，真实 HTTP）执行；加密口令为一次性测试口令，未写入仓库。
+> 未执行项：ENC-01 需面板写操作、ENC-06/07 缺旧版 v01 夹具，均不得按 PASS 计。
 
 ---
 
@@ -201,7 +225,12 @@
 
 | 日期 | 插件版本 | ui-kit 版本 | 账号组合 | 执行人 | 结果 | 备注 |
 |---|---|---|---|---|---|---|
-| （执行后填写） | | | | | | |
+| 2026-10-26 | 1.2.0 | 2.8.0 | default-user（单账号；_shared 另有 zgy9009 历史分享） | webdav-e2e | PASS | SH-01 分享 PASS（_shared 2→3）；SH-02 共享列表 PASS（GET /shared 列出条目及 sharedBy）；未触碰他人分享 |
+| 2026-10-26 | 1.2.0 | 2.8.0 | 缺第二账号 B | — | 未执行 | SH-03 跨账号还原、SH-04 加密共享还原、SH-05 他人撤回 403、SH-06 分享者撤回（缺 B 侧刷新确认）、SH-07 同名 409、SH-08 不受轮转影响 |
+
+> 本批说明：真实 WebDAV 上完成「分享 → 撤回」闭环，_shared 条目 2→3→2，未触碰他人分享；
+> 但缺第二账号 B，SH-06 的 B 侧刷新确认未验，故按「未执行」计。
+> SH-03 在本清单为跨账号还原（「取消分享」对应 SH-06）；部分项仅有自动化覆盖，不混写为 PASS。
 
 ---
 
@@ -232,7 +261,12 @@
 
 | 日期 | 插件版本 | ui-kit 版本 | 账号 | 执行人 | 结果 | 备注 |
 |---|---|---|---|---|---|---|
-| （执行后填写） | | | | | | |
+| 2026-10-26 | 1.2.0 | 2.8.0 | default-user（隔离 harness 临时 ST 根） | restore-harness | PASS | RB-01 还原前生成 pre_restore_*.zip（返回值与磁盘均命中）、RB-02 快照内 settings.json 为还原前内容（SHA256 校验），均 PASS |
+| 2026-10-26 | 1.2.0 | 2.8.0 | default-user（隔离 harness 临时 ST 根） | restore-harness | 未执行 | RB-03 保留上限：harness 仅执行 3 次还原、共 3 份快照，未做 6 次还原后仅保留 5 份的裁剪验证 |
+| 2026-10-26 | 1.2.0 | 2.8.0 | — | — | 未执行 | SCH-01 定时触发、SCH-02 间隔内不重复、SCH-03 定时备份可还原、ROT-01 超额轮转、ROT-02 隔离目录不误删：均未执行 |
+
+> 本批说明：回滚快照在隔离 harness（临时 ST 根 + 本地 WebDAV，真实 HTTP）验证，未跑真实实例还原。
+> RB-03 需连续 6 次还原，本轮仅 3 次，保留上限未触发，按「未执行」计；定时与轮转项无环境，未执行。
 
 ---
 
