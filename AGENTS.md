@@ -394,6 +394,7 @@ st_webdav_config.json  backups/
 | `docs/ui-kit/issue-reporting.md` | 向上游提 issue 的格式与要素 |
 | `docs/ui-kit/known-issues.md` | 上游问题台账与临时隔离层清单 |
 | `docs/decisions/README.md` | 架构决策记录（ADR）写法 |
+| `docs/ROADMAP.md` | 迭代路线：当前状态、已完成版本与 v1.3.0 收口清单 |
 | `CODE_REVIEW.md` | 安全/性能审查报告，改动安全模块前必读 |
 | `README.md` | 产品视角说明 |
 | `CHANGELOG.md` | 版本变更记录 |

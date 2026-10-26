@@ -14,6 +14,7 @@
 | [`directory-structure.md`](directory-structure.md) | 文件该放哪、依赖怎么分层 | 所有人 |
 | [`ai-collaboration.md`](ai-collaboration.md) | 人机分工、任务拆解、验收标准 | 人 + AI |
 | [`manual-qa.md`](manual-qa.md) | 发版实机验收项、操作步骤与执行记录（自动化覆盖不到的部分） | 发版负责人 / 验证人 |
+| [`../ROADMAP.md`](../ROADMAP.md) | 迭代路线、已完成版本与下一版收口清单 | 所有人 |
 | [`../ui-kit/issue-reporting.md`](../ui-kit/issue-reporting.md) | 向上游提 issue 的格式与跟踪 | 发现 ui-kit 缺陷时 |
 | [`../decisions/README.md`](../decisions/README.md) | 架构决策记录（ADR）的写法与时机 | 遇到架构选择时 |
 
