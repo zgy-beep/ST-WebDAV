@@ -28,7 +28,7 @@
    * 早期版本这里直接硬编码 'v1.0.0'，导致升级到 v1.1.0 时面板标题旁的
    * 版本徽章仍显示旧版本号（版本号漂移）。
    */
-  const PLUGIN_VERSION_FALLBACK = '1.3.0';
+  const PLUGIN_VERSION_FALLBACK = '1.4.0';
   let PLUGIN_VERSION = PLUGIN_VERSION_FALLBACK;
 
   /**
@@ -65,6 +65,10 @@
   }
 
   let NVUI = null;
+  /** @type {string} UI Kit 实际加载来源：host / vendored / host-fallback / cdn */
+  let nvuiSource = '';
+  /** @type {object | null} 最近一次 kit 运行时自检结果（服务设置页只读展示） */
+  let kitSelfCheckResult = null;
   let panel = null;
   let initPromise = null;
   let currentConfig = {};
@@ -165,24 +169,81 @@
   }
 
   /**
+   * UI Kit 加载来源的中文说明（运行时诊断展示用）
+   * @type {Record<string, string>}
+   */
+  const NVUI_SOURCE_LABELS = {
+    host: '宿主已加载的 UI Kit（版本达标，直接复用）',
+    vendored: '内置本地副本（src/client/vendor/ui-kit）',
+    'host-fallback': '宿主旧版（内置副本不可用，降级）',
+    cdn: 'CDN 兜底（jsDelivr）',
+  };
+
+  /**
+   * 组装运行时诊断的文本行（纯函数，便于验证与复用）
+   * @returns {string[]}
+   */
+  function formatKitDiagnostics() {
+    const rows = [`加载来源：${NVUI_SOURCE_LABELS[nvuiSource] || '未知'}`];
+    rows.push(`UI Kit 版本：${NVUI && NVUI.version ? NVUI.version : '未知'}`);
+    if (kitSelfCheckResult) {
+      const cssVersion = kitSelfCheckResult.cssVersion || '未知';
+      rows.push(`CSS 加载：${kitSelfCheckResult.cssLoaded ? '正常' : '缺失'}（版本 ${cssVersion}）`);
+      const glass = kitSelfCheckResult.glass || {};
+      rows.push(`玻璃状态：${glass.state || 'unknown'}${glass.autoFallback ? '（已自动回退）' : ''}`);
+      const issues = Array.isArray(kitSelfCheckResult.issues) ? kitSelfCheckResult.issues : [];
+      rows.push(`自检结果：${issues.length === 0 ? '通过（无问题）' : `发现问题：${issues.join(', ')}`}`);
+    } else {
+      rows.push('自检结果：当前 UI Kit 未提供运行时自检能力');
+    }
+    return rows;
+  }
+
+  /**
+   * 把诊断结果写入「服务设置 → 运行时诊断」区块（元素不存在时静默跳过）
+   */
+  function renderKitDiagnostics() {
+    const body = document.getElementById('st-webdav-diag-body');
+    if (!body) return;
+    body.innerHTML = formatKitDiagnostics()
+      .map(row => `<div>${escapeHtml(row)}</div>`)
+      .join('');
+    const summary = document.getElementById('st-webdav-diag-sum');
+    if (summary) {
+      const issues = kitSelfCheckResult && Array.isArray(kitSelfCheckResult.issues)
+        ? kitSelfCheckResult.issues
+        : [];
+      summary.textContent = issues.length === 0 ? '正常' : `${issues.length} 项问题`;
+    }
+  }
+
+  /**
    * UI Kit 运行时自检（ui-kit v2.8.0+）
    * ------------------------------------------------------------------
    * 多扩展共存 / CDN 降级 / 缓存命中时，kit 的 CSS 与 JS 版本可能不一致，
    * 这类问题不抛错，只表现为样式静默失效。调用 kit 的 selfCheck 把
-   * 版本、令牌、玻璃回退状态收敛为一条可观测告警；kit 不支持时静默跳过。
-   * `glass-auto-fallback` 是宿主禁用模糊时的预期行为，不算异常，排除。
+   * 版本、令牌、玻璃回退状态收敛为一条可观测告警，并存入「服务设置 →
+   * 运行时诊断」只读展示；kit 不支持时静默跳过。
+   * `glass-auto-fallback` 是宿主禁用模糊时的预期行为，不算异常，告警时排除。
    * @param {object} kit
    */
   function runKitSelfCheck(kit) {
     try {
-      if (!kit || typeof kit.selfCheck !== 'function') return;
+      if (!kit || typeof kit.selfCheck !== 'function') {
+        kitSelfCheckResult = null;
+        renderKitDiagnostics();
+        return;
+      }
       const result = kit.selfCheck({ expect: NVUI_MIN_VERSION });
+      kitSelfCheckResult = result;
+      renderKitDiagnostics();
       const issues = (Array.isArray(result?.issues) ? result.issues : [])
         .filter(issue => issue !== 'glass-auto-fallback');
       if (issues.length > 0) {
         console.warn('[ST-WebDAV] UI Kit 自检发现问题:', issues.join(', '), result);
       }
     } catch (err) {
+      kitSelfCheckResult = null;
       // 自检失败不应阻断面板初始化
       console.warn('[ST-WebDAV] UI Kit 自检执行失败:', err?.message || err);
     }
@@ -194,6 +255,7 @@
     // 宿主已提供且版本达标时直接复用
     if (hostReady() && isVersionAtLeast(window.NVUI.version, NVUI_MIN_VERSION)) {
       NVUI = window.NVUI;
+      nvuiSource = 'host';
       runKitSelfCheck(NVUI);
       return NVUI;
     }
@@ -217,6 +279,7 @@
 
       if (hostReady() && isVersionAtLeast(window.NVUI.version, NVUI_MIN_VERSION)) {
         NVUI = window.NVUI;
+        nvuiSource = 'vendored';
         runKitSelfCheck(NVUI);
         return NVUI;
       }
@@ -226,6 +289,7 @@
       if (hostReady()) {
         console.warn(`[ST-WebDAV] 降级使用宿主已加载的 UI Kit v${window.NVUI.version}`);
         NVUI = window.NVUI;
+        nvuiSource = 'host-fallback';
         runKitSelfCheck(NVUI);
         return NVUI;
       }
@@ -245,6 +309,7 @@
     }
 
     NVUI = window.NVUI;
+    nvuiSource = 'cdn';
     runKitSelfCheck(NVUI);
     return NVUI;
   }
@@ -1666,6 +1731,27 @@
           </div>
         </div>
 
+        <!-- 运行时诊断（只读） -->
+        <div class="nvui-acc" id="st-webdav-acc-diag">
+          <button type="button" class="nvui-acc-head" aria-expanded="false">
+            <span class="nvui-acc-title"><i class="fa-solid fa-stethoscope" aria-hidden="true"></i> 运行时诊断</span>
+            <span class="nvui-acc-summary" id="st-webdav-diag-sum">检查中...</span>
+            <i class="nvui-acc-chev" aria-hidden="true"></i>
+          </button>
+          <div class="nvui-acc-body">
+            <div class="nvui-acc-inner">
+              <div id="st-webdav-diag-body" class="nvui-hint" style="line-height: 1.7;"></div>
+              <div class="st-webdav-bar" style="margin-top: var(--nvui-space-1);">
+                <button type="button" id="cfg-diag-refresh" class="nvui-btn is-ghost is-sm">
+                  <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                  重新检测
+                </button>
+                <span class="nvui-hint">只读信息，用于排查样式失效或版本不一致</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 保存按钮 -->
         <div class="st-webdav-bar" style="margin-top: var(--nvui-space-2);">
           <button type="button" id="cfg-save-btn" class="nvui-btn is-primary" style="flex: 1 1 auto;">
@@ -1719,6 +1805,16 @@
         testBtn.innerHTML = '<i class="fa-solid fa-plug-circle-check" aria-hidden="true"></i> 测试连接';
       }
     });
+
+    // 运行时诊断：首屏渲染 + 手动重新检测
+    renderKitDiagnostics();
+    const diagRefreshBtn = pane.querySelector('#cfg-diag-refresh');
+    if (diagRefreshBtn) {
+      diagRefreshBtn.addEventListener('click', () => {
+        runKitSelfCheck(NVUI);
+        toast('运行时诊断已刷新', 'info');
+      });
+    }
 
     // 保存配置按钮
     const saveBtn = pane.querySelector('#cfg-save-btn');
