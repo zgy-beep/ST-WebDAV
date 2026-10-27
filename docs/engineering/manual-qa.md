@@ -18,6 +18,9 @@
 > **批次说明（2026-10-27 v1.3.0）**：用隔离 harness 与 4 套本地真实 WebDAV 实现补齐定时备份、
 > 历史轮转、快照上限、加密共享还原、空口令拦截、本地优先等收口项；商用服务端因无账号仍 BLOCKED；
 > HOST-10 与 UI-05 转为「风险接受」（headless 不可模拟，等价分支已验证），依据见 `../ROADMAP.md`。
+>
+> **批次说明（2026-10-27 v1.4.0）**：新增 HOST-12 运行时诊断并在真实宿主验证；COPY 降级路径用
+> COPY 拦截代理完成真实覆盖，并修复「降级失败重复下载/误报 COPY 异常」缺陷（见修复记录）。
 
 - 适用对象：ST-WebDAV 发版前的实机验收，即自动化测试覆盖不到的部分。
 - 关联流程：[`versioning.md`](versioning.md) §8 第 ④ 步「全量验证」。
@@ -147,6 +150,7 @@
 | HOST-09 | 移动端抽屉 | 视口 ≤ 600px（真机或模拟）打开面板 | 变为底部抽屉（顶部圆角 + 拖拽把手）；顶部 tabs 隐藏；底部导航可切页 | ☐ |
 | HOST-10 | 移动端安全区 | 带底部安全区的设备打开面板并滚到底 | 底部导航不被 Home 指示条遮挡；内容可滚动到末尾 | ☐ |
 | HOST-11 | 重复开关 | 连续快速打开 / 关闭 3 次 | 始终只有一个浮层；无残留遮罩；控制台无异常 | ☐ |
+| HOST-12 | 运行时诊断（v1.4.0 引入） | 服务设置 → 展开「运行时诊断」，点「重新检测」 | summary 显示「正常」；加载来源/kit 版本/CSS 版本/玻璃状态/自检结论 5 行正确；重新检测触发新一次自检并提示刷新；零告警 | ☐ |
 
 ### 4.1 执行记录
 
@@ -157,6 +161,7 @@
 | 2026-10-26 | 1.2.1 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | v1.2.1 补测：HOST-04 Esc（多浮层时只关栈顶、不误关宿主模态）、HOST-05 遮罩（点内部不关）、HOST-06 焦点归还到 #extensionsMenuButton、HOST-07 焦点陷阱（Tab×14 / Shift+Tab×10 零逃逸）、HOST-11 连续开关 3 轮无残留；HOST-08 刷新、HOST-10 安全区仍未执行 |
 | 2026-10-26 | 1.2.1 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | HOST-08 刷新（dialog/panel 节点身份不变、仍停留 history、/backups 请求 3→4、info 吐司可手动关闭）；HOST-07 扩展到「服务设置」tab（Tab×13 零逃逸）；移动端 390×844 Esc 关闭与焦点归还到 #extensionsMenuButton |
 | 2026-10-26 | 1.2.1 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | BLOCKED | HOST-10 移动端安全区：headless Chrome 156 无 `Emulation.setSafeAreaInsets`，`env(safe-area-inset-bottom)` 实测 0px，无法模拟非零安全区；需真机或支持该能力的浏览器。**2026-10-27 风险接受**：kit 规则 `calc(var(--nvui-space-1) + env(safe-area-inset-bottom))` 在非刘海环境解析为 0px 与实测一致，现代浏览器均支持 env()，待有真机时补测（详见 ROADMAP） |
+| 2026-10-27 | 1.4.0 | 2.8.0 | ST 1.19.0 / Chrome 156 headless | ui-verifier | PASS | HOST-12 运行时诊断：默认收起且 summary「正常」；展开后 5 行实测（加载来源=宿主复用 / kit 2.8.0 / CSS 正常 2.8.0 / 玻璃 supported / 自检通过）；「重新检测」触发第二次 selfCheck 并弹 info 吐司「运行时诊断已刷新」；自检告警 0、pageerror 0 |
 
 > 本批说明：真实宿主 SillyTavern 1.19.0（Windows）+ 系统 Chrome headless，只读交互（打开 / 切页 /
 > 关闭），未触发备份、还原、删除等写操作；pageerror=0，console 无插件相关报错。
@@ -257,6 +262,7 @@
 | 2026-10-26 | 1.2.1 | 2.8.0 | alice/bob（隔离 harness，isolate=false，同一远端根） | restore-harness | PASS | SH-01/02/03/05/07/08：分享 COPY 201、双方可见、B 还原写入自己目录且 A 目录不变（含 crossUserNotice）、B 撤回他人 403、同名 409 且原文件与 meta 未变、retention=1 轮转后共享区文件仍在；SH-04 加密共享还原、SH-06 B 侧刷新未单独执行 |
 | 2026-10-27 | 1.2.2 | 2.8.0 | alice/bob（隔离 harness，isolate=false） | restore-harness | PASS | 共享目录归属校验修复回归：非管理员分享他人备份 403（修复前可 200 冒认）、分享本人 200、原主不再被 409 阻塞、管理员豁免 200；`/share` 与 `/delete` 口径一致；A/B 场景 13/13 无回归 |
 | 2026-10-27 | 1.2.2 | 2.8.0 | alice/bob（隔离 harness，加密共享） | restore-harness | PASS | SH-04：加密备份分享 → bob 错口令还原 500（目录/回滚快照均未变、不写盘）；正确口令 200、内容正确、crossUserNotice 正常。SH-06：alice 撤回 200 后共享文件消失，bob 立即与 250ms 后 GET /shared 均为空 |
+| 2026-10-27 | 1.3.0 | 2.8.0 | 本地真实 DAV + COPY 拦截代理（隔离） | restore-harness | PASS | COPY 降级真实覆盖（7/7）：COPY 返回 405/501/403、连接断开、以及 ~1.5MB 大文件五种变体均成功降级（GET+PUT），共享文件 sha256 与源一致，后端真实 DAV 未收到 COPY；顺带发现「降级失败重复下载并误报 COPY 异常」缺陷，已在 v1.4.0 修复并加回归测试 |
 
 > 本批说明：真实 WebDAV 上完成「分享 → 撤回」闭环，_shared 条目 2→3→2，未触碰他人分享；
 > 但缺第二账号 B，SH-06 的 B 侧刷新确认未验，故按「未执行」计。
