@@ -11,7 +11,8 @@
 | [ADR-001](ADR-001-encryption-format-v02.md) | 加密备份采用密文格式 v02 | 已接受 | 2026-10-26 |
 | [ADR-002](ADR-002-shared-area-permissions.md) | 共享区「分享者本人或管理员」权限模型 | 已接受 | 2026-10-26 |
 | [ADR-003](ADR-003-ui-kit-vendored-assets.md) | ui-kit 内置副本只 vendor 3 个运行时资产 | 已接受 | 2026-10-26 |
-| [ADR-004](ADR-004-ui-kit-v280-adoption.md) | 暂不接入 v2.8.0 玻璃 force 与运行时自检 | 已接受 | 2026-10-26 |
+| [ADR-004](ADR-004-ui-kit-v280-adoption.md) | 暂不接入 v2.8.0 玻璃 force 与运行时自检（自检部分已由 ADR-005/v1.3.0 修订） | 已接受（部分修订） | 2026-10-26 |
+| [ADR-005](ADR-005-kit-selfcheck-diagnostics-ui.md) | 在「服务设置」页展示 UI Kit 运行时诊断 | 已接受 | 2026-10-27 |
 
 **模板：**
 

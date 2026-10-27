@@ -1,6 +1,6 @@
 # ADR-004：ui-kit v2.8.0 能力采纳边界：暂不接入玻璃 force 与运行时自检
 
-- 状态：已接受
+- 状态：已接受（2026-10-27 部分修订：运行时自检已接入，见 ADR-005；玻璃 force 仍暂缓）
 - 日期：2026-10-26
 - 相关：无上游 issue；依据上游 ui-kit v2.8.0 的 CHANGELOG/UPGRADING 与前端现状
 
@@ -66,3 +66,12 @@
   - 下次升级 ui-kit 或发现相关缺陷时重新巡检（见 `docs/ui-kit/known-issues.md` 巡检记录）；
   - manual-qa 清单完成并建立基础浏览器测试基建后，另写 ADR 评估 force / selfCheck 接入；
   - 若出现明确的用户需求或上游缺陷证据，可提前修订本决策。
+
+## 修订记录
+
+- **2026-10-27 · 运行时自检部分已修订**：浏览器测试基建（`tests/browser/`，CI 内执行）与
+  manual-qa 就位后，v1.3.0 已接入 `NVUI.selfCheck({ expect })`，并把结果展示到「服务设置 →
+  运行时诊断」；决策见 [ADR-005](ADR-005-kit-selfcheck-diagnostics-ui.md)。
+  **本 ADR 仍有效的部分**：不接入 `createPanel({ glass: 'force' })`——它需要新增用户可见的
+  设置项与关闭开关，目前仍无需求证据；后续若接入，应另写 ADR 修订。
+
