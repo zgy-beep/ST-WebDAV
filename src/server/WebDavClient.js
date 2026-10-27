@@ -427,16 +427,19 @@ export class WebDavClient {
       // 服务端不支持 COPY，回退为下载 + 上传
       if (resp.status === 405 || resp.status === 501 || resp.status === 403) {
         console.info(`[ST-WebDAV] WebDAV COPY 不受支持 (HTTP ${resp.status})，降级为下载上传模式`);
-        return await this.copyViaDownloadUpload(srcRemotePath, destRemotePath);
+      } else {
+        throw new Error(`WebDAV COPY 失败: HTTP ${resp.status} ${resp.statusText}`);
       }
-
-      throw new Error(`WebDAV COPY 失败: HTTP ${resp.status} ${resp.statusText}`);
     } catch (err) {
-      // COPY 本身抛错（如服务端未实现该方法导致连接中断）时同样降级
+      // 只把「COPY 请求本身异常」视为需要降级（如服务端未实现该方法导致连接中断）；
+      // COPY 失败的错误直接上抛，不做降级。
       if (err.message?.includes('COPY 失败')) throw err;
       console.info(`[ST-WebDAV] WebDAV COPY 异常，降级为下载上传模式: ${err.message}`);
-      return await this.copyViaDownloadUpload(srcRemotePath, destRemotePath);
     }
+
+    // 降级调用必须放在 try 之外：否则降级自身的失败会被上面的 catch 再次捕获，
+    // 导致重复下载一次并误报为「COPY 异常」（大文件相当于多一份流量）。
+    return await this.copyViaDownloadUpload(srcRemotePath, destRemotePath);
   }
 
   /**
